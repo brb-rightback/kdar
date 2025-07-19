@@ -34,7 +34,7 @@ def get_x_err_Enu(x, x_bins):
             x_err[1][i] = x_bins[i+1] - x[i]
     return x_err
 
-def wilson(n_pass, n, z = 1.96):
+def wilson(n_pass, n, z = 1):
     if n==0: return 0,0    
     p = n_pass/n
     denominator = 1 + z**2/n
@@ -63,6 +63,8 @@ def wilson_err(n_pass, n):
         y_err[0].append(low_err)
         y_err[1].append(high_err)
     return y_err
+
+
 
 def is_invertible(a):
     return a.shape[0] == a.shape[1] and np.linalg.matrix_rank(a) == a.shape[0]

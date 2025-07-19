@@ -1,13 +1,983 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import uproot3 as uproot
-import uproot4 as uprootnew
 import pandas as pd
 import numpy as np
 import math
 from tqdm import tqdm
 
+import xgboost as xgb
+
 import general_functions as utils
+
+presel_query = "ssm_kine_reco_Enu>10 and ssm_kine_reco_Enu<350 and match_isFC==1"
+presel_query+= " and ssm_kine_pio_mass<50"
+presel_query+= " and ssm_cosmict_flag_9==0"
+presel_query+= " and ssm_E<270"
+presel_query+= " and ssm_kine_energy>0"
+
+presel_query_recomb2 = "ssm_kine_reco_Enu_recomb2>10 and ssm_kine_reco_Enu_recomb2<350 and match_isFC_recomb2==1"
+presel_query_recomb2+= " and ssm_kine_pio_mass_recomb2<50"
+presel_query_recomb2+= " and ssm_cosmict_flag_9_recomb2==0"
+presel_query_recomb2+= " and ssm_E_recomb2<270"
+presel_query_recomb2+= " and ssm_kine_energy_recomb2>0"
+
+presel_query_SCE = "ssm_kine_reco_Enu_SCE>10 and ssm_kine_reco_Enu_SCE<350 and match_isFC_SCE==1"
+presel_query_SCE+= " and ssm_kine_pio_mass_SCE<50"
+presel_query_SCE+= " and ssm_cosmict_flag_9_SCE==0"
+presel_query_SCE+= " and ssm_E_SCE<270"
+presel_query_SCE+= " and ssm_kine_energy_SCE>0"
+
+presel_query_lyatt = "ssm_kine_reco_Enu_lyatt>10 and ssm_kine_reco_Enu_lyatt<350 and match_isFC_lyatt==1"
+presel_query_lyatt+= " and ssm_kine_pio_mass_lyatt<50"
+presel_query_lyatt+= " and ssm_cosmict_flag_9_lyatt==0"
+presel_query_lyatt+= " and ssm_E_lyatt<270"
+presel_query_lyatt+= " and ssm_kine_energy_lyatt>0"
+
+presel_query_lyr = "ssm_kine_reco_Enu_lyr>10 and ssm_kine_reco_Enu_lyr<350 and match_isFC_lyr==1"
+presel_query_lyr+= " and ssm_kine_pio_mass_lyr<50"
+presel_query_lyr+= " and ssm_cosmict_flag_9_lyr==0"
+presel_query_lyr+= " and ssm_E_lyr<270"
+presel_query_lyr+= " and ssm_kine_energy_lyr>0"
+
+presel_query_lyd = "ssm_kine_reco_Enu_lyd>10 and ssm_kine_reco_Enu_lyd<350 and match_isFC_lyd==1"
+presel_query_lyd+= " and ssm_kine_pio_mass_lyd<50"
+presel_query_lyd+= " and ssm_cosmict_flag_9_lyd==0"
+presel_query_lyd+= " and ssm_E_lyd<270"
+presel_query_lyd+= " and ssm_kine_energy_lyd>0"
+
+presel_query_WMX = "ssm_kine_reco_Enu_WMX>10 and ssm_kine_reco_Enu_WMX<350 and match_isFC_WMX==1"
+presel_query_WMX+= " and ssm_kine_pio_mass_WMX<50"
+presel_query_WMX+= " and ssm_cosmict_flag_9_WMX==0"
+presel_query_WMX+= " and ssm_E_WMX<270"
+presel_query_WMX+= " and ssm_kine_energy_WMX>0"
+
+presel_query_WMYZ = "ssm_kine_reco_Enu_WMYZ>10 and ssm_kine_reco_Enu_WMYZ<350 and match_isFC_WMYZ==1"
+presel_query_WMYZ+= " and ssm_kine_pio_mass_WMYZ<50"
+presel_query_WMYZ+= " and ssm_cosmict_flag_9_WMYZ==0"
+presel_query_WMYZ+= " and ssm_E_WMYZ<270"
+presel_query_WMYZ+= " and ssm_kine_energy_WMYZ>0"
+
+presel_query_WMthetaXZ = "ssm_kine_reco_Enu_WMthetaXZ>10 and ssm_kine_reco_Enu_WMthetaXZ<350 and match_isFC_WMthetaXZ==1"
+presel_query_WMthetaXZ+= " and ssm_kine_pio_mass_WMthetaXZ<50"
+presel_query_WMthetaXZ+= " and ssm_cosmict_flag_9_WMthetaXZ==0"
+presel_query_WMthetaXZ+= " and ssm_E_WMthetaXZ<270"
+presel_query_WMthetaXZ+= " and ssm_kine_energy_WMthetaXZ>0"
+
+presel_query_WMthetaYZ = "ssm_kine_reco_Enu_WMthetaYZ>10 and ssm_kine_reco_Enu_WMthetaYZ<350 and match_isFC_WMthetaYZ==1"
+presel_query_WMthetaYZ+= " and ssm_kine_pio_mass_WMthetaYZ<50"
+presel_query_WMthetaYZ+= " and ssm_cosmict_flag_9_WMthetaYZ==0"
+presel_query_WMthetaYZ+= " and ssm_E_WMthetaYZ<270"
+presel_query_WMthetaYZ+= " and ssm_kine_energy_WMthetaYZ>0"
+
+
+ssm_bdt_vars = [
+          "ssm_Nsm",
+          "ssm_Nsm_wivtx",
+          "ssm_dq_dx_fwd_1",
+          "ssm_dq_dx_fwd_2",
+          "ssm_dq_dx_fwd_3",
+          "ssm_dq_dx_fwd_4",
+          "ssm_dq_dx_fwd_5",
+          "ssm_dq_dx_bck_1",
+          "ssm_dq_dx_bck_2",
+          "ssm_dq_dx_bck_3",
+          "ssm_dq_dx_bck_4",
+          "ssm_dq_dx_bck_5",
+          "ssm_d_dq_dx_fwd_12",
+          "ssm_d_dq_dx_fwd_23",
+          "ssm_d_dq_dx_fwd_34",
+          "ssm_d_dq_dx_fwd_45",
+          "ssm_d_dq_dx_bck_12",
+          "ssm_d_dq_dx_bck_23",
+          "ssm_d_dq_dx_bck_34",
+          "ssm_d_dq_dx_bck_45",
+          "ssm_max_dq_dx_fwd_3",
+          "ssm_max_dq_dx_fwd_5",
+          "ssm_max_dq_dx_bck_3",
+          "ssm_max_dq_dx_bck_5",
+          "ssm_max_d_dq_dx_fwd_3",
+          "ssm_max_d_dq_dx_fwd_5",
+          "ssm_max_d_dq_dx_bck_3",
+          "ssm_max_d_dq_dx_bck_5",
+          "ssm_medium_dq_dx",
+          "ssm_medium_dq_dx_bp",
+          "ssm_angle_to_z",
+          "ssm_angle_to_target",
+          "ssm_angle_to_absorber",
+          "ssm_angle_to_vertical",
+          "ssm_x_dir",
+          "ssm_y_dir",
+          "ssm_z_dir",
+          "ssm_kine_energy",
+          "ssm_kine_energy_reduced",
+          "ssm_vtx_activity",
+          "ssm_pdg",
+          "ssm_dQ_dx_cut",
+          "ssm_score_mu_fwd",
+          "ssm_score_p_fwd",
+          "ssm_score_e_fwd",
+          "ssm_score_mu_bck",
+          "ssm_score_p_bck",
+          "ssm_score_e_bck",
+          "ssm_score_mu_fwd_bp",
+          "ssm_score_p_fwd_bp",
+          "ssm_score_e_fwd_bp",
+          "ssm_length",
+          "ssm_direct_length",
+          "ssm_length_ratio",
+          "ssm_max_dev",
+          "ssm_n_prim_tracks_1",
+          "ssm_n_prim_tracks_3",
+          "ssm_n_prim_tracks_5",
+          "ssm_n_prim_tracks_8",
+          "ssm_n_prim_tracks_11",
+          "ssm_n_all_tracks_1",
+          "ssm_n_all_tracks_3",
+          "ssm_n_all_tracks_5",
+          "ssm_n_all_tracks_8",
+          "ssm_n_all_tracks_11",
+          "ssm_n_daughter_tracks_1",
+          "ssm_n_daughter_tracks_3",
+          "ssm_n_daughter_tracks_5",
+          "ssm_n_daughter_tracks_8",
+          "ssm_n_daughter_tracks_11",
+          "ssm_n_daughter_all_1",
+          "ssm_n_daughter_all_3",
+          "ssm_n_daughter_all_5",
+          "ssm_n_daughter_all_8",
+          "ssm_n_daughter_all_11",
+    
+          "ssm_prim_track1_pdg",
+          "ssm_prim_track1_score_mu_fwd",
+          "ssm_prim_track1_score_p_fwd",
+          "ssm_prim_track1_score_e_fwd",
+          "ssm_prim_track1_score_mu_bck",
+          "ssm_prim_track1_score_p_bck",
+          "ssm_prim_track1_score_e_bck",
+          "ssm_prim_track1_length",
+          "ssm_prim_track1_direct_length",
+          "ssm_prim_track1_length_ratio",
+          "ssm_prim_track1_max_dev",
+          "ssm_prim_track1_kine_energy_range",
+          "ssm_prim_track1_kine_energy_range_mu",
+          "ssm_prim_track1_kine_energy_range_p",
+          "ssm_prim_track1_kine_energy_range_e",
+          "ssm_prim_track1_kine_energy_cal",
+          "ssm_prim_track1_medium_dq_dx",
+          "ssm_prim_track1_x_dir",
+          "ssm_prim_track1_y_dir",
+          "ssm_prim_track1_z_dir",
+          "ssm_prim_track1_add_daught_track_counts_1",
+          "ssm_prim_track1_add_daught_all_counts_1",
+          "ssm_prim_track1_add_daught_track_counts_5",
+          "ssm_prim_track1_add_daught_all_counts_5",
+          "ssm_prim_track1_add_daught_track_counts_11",
+          "ssm_prim_track1_add_daught_all_counts_11",
+    
+          "ssm_prim_track2_pdg",
+          "ssm_prim_track2_score_mu_fwd",
+          "ssm_prim_track2_score_p_fwd",
+          "ssm_prim_track2_score_e_fwd",
+          "ssm_prim_track2_score_mu_bck",
+          "ssm_prim_track2_score_p_bck",
+          "ssm_prim_track2_score_e_bck",
+          "ssm_prim_track2_length",
+          "ssm_prim_track2_direct_length",
+          "ssm_prim_track2_length_ratio",
+          "ssm_prim_track2_max_dev",
+          "ssm_prim_track2_kine_energy_range",
+          "ssm_prim_track2_kine_energy_range_mu",
+          "ssm_prim_track2_kine_energy_range_p",
+          "ssm_prim_track2_kine_energy_range_e",
+          "ssm_prim_track2_kine_energy_cal",
+          "ssm_prim_track2_medium_dq_dx",
+          "ssm_prim_track2_x_dir",
+          "ssm_prim_track2_y_dir",
+          "ssm_prim_track2_z_dir",
+          "ssm_prim_track2_add_daught_track_counts_1",
+          "ssm_prim_track2_add_daught_all_counts_1",
+          "ssm_prim_track2_add_daught_track_counts_5",
+          "ssm_prim_track2_add_daught_all_counts_5",
+          "ssm_prim_track2_add_daught_track_counts_11",
+          "ssm_prim_track2_add_daught_all_counts_11",
+    
+          "ssm_daught_track1_pdg",
+          "ssm_daught_track1_score_mu_fwd",
+          "ssm_daught_track1_score_p_fwd",
+          "ssm_daught_track1_score_e_fwd",
+          "ssm_daught_track1_score_mu_bck",
+          "ssm_daught_track1_score_p_bck",
+          "ssm_daught_track1_score_e_bck",
+          "ssm_daught_track1_length",
+          "ssm_daught_track1_direct_length",
+          "ssm_daught_track1_length_ratio",
+          "ssm_daught_track1_max_dev",
+          "ssm_daught_track1_kine_energy_range",
+          "ssm_daught_track1_kine_energy_range_mu",
+          "ssm_daught_track1_kine_energy_range_p",
+          "ssm_daught_track1_kine_energy_range_e",
+          "ssm_daught_track1_kine_energy_cal",
+          "ssm_daught_track1_medium_dq_dx",
+          "ssm_daught_track1_x_dir",
+          "ssm_daught_track1_y_dir",
+          "ssm_daught_track1_z_dir",
+          "ssm_daught_track1_add_daught_track_counts_1",
+          "ssm_daught_track1_add_daught_all_counts_1",
+          "ssm_daught_track1_add_daught_track_counts_5",
+          "ssm_daught_track1_add_daught_all_counts_5",
+          "ssm_daught_track1_add_daught_track_counts_11",
+          "ssm_daught_track1_add_daught_all_counts_11",
+    
+          "ssm_daught_track2_pdg",
+          "ssm_daught_track2_score_mu_fwd",
+          "ssm_daught_track2_score_p_fwd",
+          "ssm_daught_track2_score_e_fwd",
+          "ssm_daught_track2_score_mu_bck",
+          "ssm_daught_track2_score_p_bck",
+          "ssm_daught_track2_score_e_bck",
+          "ssm_daught_track2_length",
+          "ssm_daught_track2_direct_length",
+          "ssm_daught_track2_length_ratio",
+          "ssm_daught_track2_max_dev",
+          "ssm_daught_track2_kine_energy_range",
+          "ssm_daught_track2_kine_energy_range_mu",
+          "ssm_daught_track2_kine_energy_range_p",
+          "ssm_daught_track2_kine_energy_range_e",
+          "ssm_daught_track2_kine_energy_cal",
+          "ssm_daught_track2_medium_dq_dx",
+          "ssm_daught_track2_x_dir",
+          "ssm_daught_track2_y_dir",
+          "ssm_daught_track2_z_dir",
+          "ssm_daught_track2_add_daught_track_counts_1",
+          "ssm_daught_track2_add_daught_all_counts_1",
+          "ssm_daught_track2_add_daught_track_counts_5",
+          "ssm_daught_track2_add_daught_all_counts_5",
+          "ssm_daught_track2_add_daught_track_counts_11",
+          "ssm_daught_track2_add_daught_all_counts_11",
+    
+          "ssm_prim_shw1_pdg",
+          "ssm_prim_shw1_score_mu_fwd",
+          "ssm_prim_shw1_score_p_fwd",
+          "ssm_prim_shw1_score_e_fwd",
+          "ssm_prim_shw1_score_mu_bck",
+          "ssm_prim_shw1_score_p_bck",
+          "ssm_prim_shw1_score_e_bck",
+          "ssm_prim_shw1_length",
+          "ssm_prim_shw1_direct_length",
+          "ssm_prim_shw1_length_ratio",
+          "ssm_prim_shw1_max_dev",
+          "ssm_prim_shw1_kine_energy_range",
+          "ssm_prim_shw1_kine_energy_range_mu",
+          "ssm_prim_shw1_kine_energy_range_p",
+          "ssm_prim_shw1_kine_energy_range_e",
+          "ssm_prim_shw1_kine_energy_cal",
+          'ssm_prim_shw1_kine_energy_best',
+          "ssm_prim_shw1_medium_dq_dx",
+          "ssm_prim_shw1_x_dir",
+          "ssm_prim_shw1_y_dir",
+          "ssm_prim_shw1_z_dir",
+          "ssm_prim_shw1_add_daught_track_counts_1",
+          "ssm_prim_shw1_add_daught_all_counts_1",
+          "ssm_prim_shw1_add_daught_track_counts_5",
+          "ssm_prim_shw1_add_daught_all_counts_5",
+          "ssm_prim_shw1_add_daught_track_counts_11",
+          "ssm_prim_shw1_add_daught_all_counts_11",
+    
+          "ssm_prim_shw2_pdg",
+          "ssm_prim_shw2_score_mu_fwd",
+          "ssm_prim_shw2_score_p_fwd",
+          "ssm_prim_shw2_score_e_fwd",
+          "ssm_prim_shw2_score_mu_bck",
+          "ssm_prim_shw2_score_p_bck",
+          "ssm_prim_shw2_score_e_bck",
+          "ssm_prim_shw2_length",
+          "ssm_prim_shw2_direct_length",
+          "ssm_prim_shw2_length_ratio",
+          "ssm_prim_shw2_max_dev",
+          "ssm_prim_shw2_kine_energy_range",
+          "ssm_prim_shw2_kine_energy_range_mu",
+          "ssm_prim_shw2_kine_energy_range_p",
+          "ssm_prim_shw2_kine_energy_range_e",
+          "ssm_prim_shw2_kine_energy_cal",
+          'ssm_prim_shw2_kine_energy_best',
+          "ssm_prim_shw2_medium_dq_dx",
+          "ssm_prim_shw2_x_dir",
+          "ssm_prim_shw2_y_dir",
+          "ssm_prim_shw2_z_dir",
+          "ssm_prim_shw2_add_daught_track_counts_1",
+          "ssm_prim_shw2_add_daught_all_counts_1",
+          "ssm_prim_shw2_add_daught_track_counts_5",
+          "ssm_prim_shw2_add_daught_all_counts_5",
+          "ssm_prim_shw2_add_daught_track_counts_11",
+          "ssm_prim_shw2_add_daught_all_counts_11",
+    
+          "ssm_daught_shw1_pdg",
+          "ssm_daught_shw1_score_mu_fwd",
+          "ssm_daught_shw1_score_p_fwd",
+          "ssm_daught_shw1_score_e_fwd",
+          "ssm_daught_shw1_score_mu_bck",
+          "ssm_daught_shw1_score_p_bck",
+          "ssm_daught_shw1_score_e_bck",
+          "ssm_daught_shw1_length",
+          "ssm_daught_shw1_direct_length",
+          "ssm_daught_shw1_length_ratio",
+          "ssm_daught_shw1_max_dev",
+          "ssm_daught_shw1_kine_energy_range",
+          "ssm_daught_shw1_kine_energy_range_mu",
+          "ssm_daught_shw1_kine_energy_range_p",
+          "ssm_daught_shw1_kine_energy_range_e",
+          "ssm_daught_shw1_kine_energy_cal",
+          'ssm_daught_shw1_kine_energy_best',
+          "ssm_daught_shw1_medium_dq_dx",
+          "ssm_daught_shw1_x_dir",
+          "ssm_daught_shw1_y_dir",
+          "ssm_daught_shw1_z_dir",
+          "ssm_daught_shw1_add_daught_track_counts_1",
+          "ssm_daught_shw1_add_daught_all_counts_1",
+          "ssm_daught_shw1_add_daught_track_counts_5",
+          "ssm_daught_shw1_add_daught_all_counts_5",
+          "ssm_daught_shw1_add_daught_track_counts_11",
+          "ssm_daught_shw1_add_daught_all_counts_11",
+    
+          "ssm_daught_shw2_pdg",
+          "ssm_daught_shw2_score_mu_fwd",
+          "ssm_daught_shw2_score_p_fwd",
+          "ssm_daught_shw2_score_e_fwd",
+          "ssm_daught_shw2_score_mu_bck",
+          "ssm_daught_shw2_score_p_bck",
+          "ssm_daught_shw2_score_e_bck",
+          "ssm_daught_shw2_length",
+          "ssm_daught_shw2_direct_length",
+          "ssm_daught_shw2_length_ratio",
+          "ssm_daught_shw2_max_dev",
+          "ssm_daught_shw2_kine_energy_range",
+          "ssm_daught_shw2_kine_energy_range_mu",
+          "ssm_daught_shw2_kine_energy_range_p",
+          "ssm_daught_shw2_kine_energy_range_e",
+          "ssm_daught_shw2_kine_energy_cal",
+          'ssm_daught_shw2_kine_energy_best',
+          "ssm_daught_shw2_medium_dq_dx",
+          "ssm_daught_shw2_x_dir",
+          "ssm_daught_shw2_y_dir",
+          "ssm_daught_shw2_z_dir",
+          "ssm_daught_shw2_add_daught_track_counts_1",
+          "ssm_daught_shw2_add_daught_all_counts_1",
+          "ssm_daught_shw2_add_daught_track_counts_5",
+          "ssm_daught_shw2_add_daught_all_counts_5",
+          "ssm_daught_shw2_add_daught_track_counts_11",
+          "ssm_daught_shw2_add_daught_all_counts_11",
+    
+          "ssm_nu_angle_z",
+          "ssm_nu_angle_target",
+          "ssm_nu_angle_absorber",
+          "ssm_nu_angle_vertical",
+          "ssm_prim_nu_angle_z",
+          "ssm_prim_nu_angle_target",
+          "ssm_prim_nu_angle_absorber",
+          "ssm_prim_nu_angle_vertical",
+          "ssm_con_nu_angle_z",
+          "ssm_con_nu_angle_target",
+          "ssm_con_nu_angle_absorber",
+          "ssm_con_nu_angle_vertical",
+          "ssm_track_angle_z",
+          "ssm_track_angle_target",
+          "ssm_track_angle_absorber",
+          "ssm_track_angle_vertical",
+          "ssm_vtxX",
+          "ssm_vtxY",
+          "ssm_vtxZ",
+
+          "ssm_offvtx_length",
+          "ssm_offvtx_energy",
+          "ssm_n_offvtx_tracks_1",
+          "ssm_n_offvtx_tracks_3",
+          "ssm_n_offvtx_tracks_5",
+          "ssm_n_offvtx_tracks_8",
+          "ssm_n_offvtx_tracks_11",
+          "ssm_n_offvtx_showers_1",
+          "ssm_n_offvtx_showers_3",
+          "ssm_n_offvtx_showers_5",
+          "ssm_n_offvtx_showers_8",
+          "ssm_n_offvtx_showers_11",
+          "ssm_offvtx_track1_pdg",
+          "ssm_offvtx_track1_score_mu_fwd",
+          "ssm_offvtx_track1_score_p_fwd",
+          "ssm_offvtx_track1_score_e_fwd",
+          "ssm_offvtx_track1_score_mu_bck",
+          "ssm_offvtx_track1_score_p_bck",
+          "ssm_offvtx_track1_score_e_bck",
+          "ssm_offvtx_track1_length",
+          "ssm_offvtx_track1_direct_length",
+          "ssm_offvtx_track1_max_dev",
+          "ssm_offvtx_track1_kine_energy_range",
+          "ssm_offvtx_track1_kine_energy_range_mu",
+          "ssm_offvtx_track1_kine_energy_range_p",
+          "ssm_offvtx_track1_kine_energy_range_e",
+          "ssm_offvtx_track1_kine_energy_cal",
+          "ssm_offvtx_track1_medium_dq_dx",
+          "ssm_offvtx_track1_x_dir",
+          "ssm_offvtx_track1_y_dir",
+          "ssm_offvtx_track1_z_dir",
+          "ssm_offvtx_track1_dist_mainvtx",
+          "ssm_offvtx_shw1_pdg_offvtx",
+          "ssm_offvtx_shw1_score_mu_fwd",
+          "ssm_offvtx_shw1_score_p_fwd",
+          "ssm_offvtx_shw1_score_e_fwd",
+          "ssm_offvtx_shw1_score_mu_bck",
+          "ssm_offvtx_shw1_score_p_bck",
+          "ssm_offvtx_shw1_score_e_bck",
+          "ssm_offvtx_shw1_length",
+          "ssm_offvtx_shw1_direct_length",
+          "ssm_offvtx_shw1_max_dev",
+          "ssm_offvtx_shw1_kine_energy_best",
+          "ssm_offvtx_shw1_kine_energy_range",
+          "ssm_offvtx_shw1_kine_energy_range_mu",
+          "ssm_offvtx_shw1_kine_energy_range_p",
+          "ssm_offvtx_shw1_kine_energy_range_e",
+          "ssm_offvtx_shw1_kine_energy_cal",
+          "ssm_offvtx_shw1_medium_dq_dx",
+          "ssm_offvtx_shw1_x_dir",
+          "ssm_offvtx_shw1_y_dir",
+          "ssm_offvtx_shw1_z_dir",
+          "ssm_offvtx_shw1_dist_mainvtx",
+
+          "ssm_kine_reco_Enu",
+          "ssm_kine_reco_add_energy",
+          "ssm_kine_energy_particle",
+          "ssm_kine_energy_info",
+          "ssm_kine_particle_type",
+          "ssm_kine_energy_included",
+          "ssm_kine_pio_mass",
+          "ssm_kine_pio_flag",
+          "ssm_kine_pio_vtx_dis",
+          "ssm_kine_pio_energy_1",
+          "ssm_kine_pio_theta_1",
+          "ssm_kine_pio_phi_1",
+          "ssm_kine_pio_dis_1",
+          "ssm_kine_pio_energy_2",
+          "ssm_kine_pio_theta_2",
+          "ssm_kine_pio_phi_2",
+          "ssm_kine_pio_dis_2",
+          "ssm_kine_pio_angle",
+          "ssm_numu_cc_flag",
+          "ssm_cosmict_flag_1", 
+          "ssm_cosmict_flag_2",  
+          "ssm_cosmict_flag_3",  
+          "ssm_cosmict_flag_4",  
+          "ssm_cosmict_flag_5", 
+          "ssm_cosmict_flag_6", 
+          "ssm_cosmict_flag_7", 
+          "ssm_cosmict_flag_8",  
+          "ssm_cosmict_flag_9"
+]
+
+
+bdt_vars = [
+    
+    "mip_energy",
+    "mip_angle_beam", 
+    "spt_angle_vertical", 
+    "numu_cc_3_track_length",
+    "numu_cc_3_max_length_all",
+    "cosmict_2_dQ_dx_front",
+    "cosmict_2_dQ_dx_end",
+    "cosmict_2_angle_beam",
+    "cosmict_2_phi",
+    "numu_cc_3_max_length",
+    "numu_cc_3_max_muon_length",
+    
+    'cosmict_flag_1',
+    'cosmict_flag_2',
+    'cosmict_flag_3',
+    'cosmict_flag_4',
+    'cosmict_flag_5',
+    'cosmict_flag_6',
+    'cosmict_flag_7',
+    'cosmict_flag_8',
+    'cosmict_flag_9',
+    'cosmict_flag_10',
+    'cosmict_flag',
+    "numu_score",
+    "numu_cc_flag",
+    "nue_score"
+]
+
+eval_vars = [
+    "run",
+    "subrun",
+    "event",
+    'flash_found', 
+    'flash_time', 
+    'flash_found_asInt', 'match_found_asInt', 
+    'flash_measPe', 'flash_predPe', 
+    'match_found', 'match_type', 'match_isFC', 'match_isTgm', 'match_notFC_FV', 'match_notFC_SP','match_notFC_DC', 'match_chargeU', 
+    'match_chargeV', 'match_chargeY', 'match_energyY', 'light_mismatch', 'match_charge', 'match_energy', 
+    'stm_eventtype', 'stm_lowenergy', 'stm_LM', 'stm_TGM', 'stm_STM', 'stm_FullDead', 'stm_clusterlength',"lm_cluster_length"
+     ]
+
+eval_mc_vars = ["truth_nuPdg","truth_isCC",
+                       'truth_energyInside','match_completeness_energy','truth_vtxInside'
+                
+                      ]
+
+
+kine_vars = ["kine_particle_type", "kine_energy_particle", "kine_reco_add_energy", "kine_energy_info",
+                 "kine_pio_mass",
+                    "kine_pio_flag",
+                    "kine_pio_vtx_dis",
+                    "kine_pio_energy_1",
+                    "kine_pio_theta_1",
+                    "kine_pio_phi_1",
+                    "kine_pio_dis_1",
+                    "kine_pio_energy_2",
+                    "kine_pio_theta_2",
+                    "kine_pio_phi_2",
+                    "kine_pio_dis_2",
+                    "kine_pio_angle"]
+
+kine_mc_vars = ["kine_reco_Enu"]
+
+pf_eval_vars = ["reco_mother","reco_id","reco_pdg","reco_startMomentum",
+           "reco_startXYZT","reco_endXYZT",
+           "reco_nuvtxX","reco_nuvtxY","reco_nuvtxZ",
+           "reco_Ntrack",
+           "reco_muonMomentum",
+           "reco_protonMomentum",
+           "RWM_Time","PMT_TimeProp","PMT_Amp","PMT_Time","PMT_ID","evtTimeNS"]
+
+
+pf_eval_mc_vars = [
+    "truth_nuEnergy",
+    "truth_nu_momentum",
+    "truth_mother",
+    "truth_id",
+    "truth_pdg",
+    "truth_startMomentum",
+    "truth_muonMomentum",
+    "truth_vtxX","truth_vtxY","truth_vtxZ","truth_startXYZT",
+    #'evtTimeNS_cor',
+    'mcflux_dk2gen','mcflux_gen2vtx',"mcflux_vx","mcflux_vy","mcflux_vz",
+    "truth_nu_pos",'truth_nuTime',
+    #'cor_nu_time','cor_nu_deltatime','cor_nu_time_nospill','cor_nu_time_spill'
+    "truth_nuScatType",
+]
+
+
+train_vars_nokineprim = [
+          "ssm_Nsm",
+          "ssm_Nsm_wivtx",
+          "ssm_dq_dx_fwd_1",
+          "ssm_dq_dx_fwd_2",
+          "ssm_dq_dx_fwd_3",
+          "ssm_dq_dx_fwd_4",
+          "ssm_dq_dx_fwd_5",
+          "ssm_dq_dx_bck_1",
+          "ssm_dq_dx_bck_2",
+          "ssm_dq_dx_bck_3",
+          "ssm_dq_dx_bck_4",
+          "ssm_dq_dx_bck_5",
+          "ssm_d_dq_dx_fwd_12",
+          "ssm_d_dq_dx_fwd_23",
+          "ssm_d_dq_dx_fwd_34",
+          "ssm_d_dq_dx_fwd_45",
+          "ssm_d_dq_dx_bck_12",
+          "ssm_d_dq_dx_bck_23",
+          "ssm_d_dq_dx_bck_34",
+          "ssm_d_dq_dx_bck_45",
+          "ssm_max_dq_dx_fwd_3",
+          "ssm_max_dq_dx_fwd_5",
+          "ssm_max_dq_dx_bck_3",
+          "ssm_max_dq_dx_bck_5",
+          "ssm_max_d_dq_dx_fwd_3",
+          "ssm_max_d_dq_dx_fwd_5",
+          "ssm_max_d_dq_dx_bck_3",
+          "ssm_max_d_dq_dx_bck_5",
+          "ssm_medium_dq_dx",
+          "ssm_medium_dq_dx_bp",
+          
+          "ssm_vtx_activity",
+          "ssm_pdg",
+
+          "ssm_score_mu_fwd",
+          "ssm_score_p_fwd",
+          "ssm_score_e_fwd",
+          "ssm_score_mu_bck",
+          "ssm_score_p_bck",
+          "ssm_score_e_bck",
+          "ssm_score_mu_fwd_bp",
+          "ssm_score_p_fwd_bp",
+          "ssm_score_e_fwd_bp",
+
+          "ssm_length_ratio",
+
+          "ssm_n_prim_tracks_1",
+          "ssm_n_prim_tracks_3",
+          "ssm_n_prim_tracks_5",
+          "ssm_n_prim_tracks_8",
+          "ssm_n_prim_tracks_11",
+          "ssm_n_all_tracks_1",
+          "ssm_n_all_tracks_3",
+          "ssm_n_all_tracks_5",
+          "ssm_n_all_tracks_8",
+          "ssm_n_all_tracks_11",
+          "ssm_n_daughter_tracks_1",
+          "ssm_n_daughter_tracks_3",
+          "ssm_n_daughter_tracks_5",
+          "ssm_n_daughter_tracks_8",
+          "ssm_n_daughter_tracks_11",
+          "ssm_n_daughter_all_1",
+          "ssm_n_daughter_all_3",
+          "ssm_n_daughter_all_5",
+          "ssm_n_daughter_all_8",
+          "ssm_n_daughter_all_11",
+    
+          "ssm_prim_track1_pdg",
+          "ssm_prim_track1_score_mu_fwd",
+          "ssm_prim_track1_score_p_fwd",
+          "ssm_prim_track1_score_e_fwd",
+          "ssm_prim_track1_score_mu_bck",
+          "ssm_prim_track1_score_p_bck",
+          "ssm_prim_track1_score_e_bck",
+          "ssm_prim_track1_max_dev",
+          "ssm_prim_track1_medium_dq_dx",
+          "ssm_prim_track1_add_daught_track_counts_1",
+          "ssm_prim_track1_add_daught_all_counts_1",
+          "ssm_prim_track1_add_daught_track_counts_5",
+          "ssm_prim_track1_add_daught_all_counts_5",
+          "ssm_prim_track1_add_daught_track_counts_11",
+          "ssm_prim_track1_add_daught_all_counts_11",
+    
+          "ssm_prim_track2_pdg",
+          "ssm_prim_track2_score_mu_fwd",
+          "ssm_prim_track2_score_p_fwd",
+          "ssm_prim_track2_score_e_fwd",
+          "ssm_prim_track2_score_mu_bck",
+          "ssm_prim_track2_score_p_bck",
+          "ssm_prim_track2_score_e_bck",
+          "ssm_prim_track2_max_dev",
+          "ssm_prim_track2_medium_dq_dx",
+          "ssm_prim_track2_add_daught_track_counts_1",
+          "ssm_prim_track2_add_daught_all_counts_1",
+          "ssm_prim_track2_add_daught_track_counts_5",
+          "ssm_prim_track2_add_daught_all_counts_5",
+          "ssm_prim_track2_add_daught_track_counts_11",
+          "ssm_prim_track2_add_daught_all_counts_11",
+    
+          "ssm_daught_track1_pdg",
+          "ssm_daught_track1_score_mu_fwd",
+          "ssm_daught_track1_score_p_fwd",
+          "ssm_daught_track1_score_e_fwd",
+          "ssm_daught_track1_score_mu_bck",
+          "ssm_daught_track1_score_p_bck",
+          "ssm_daught_track1_score_e_bck",
+          "ssm_daught_track1_length",
+          "ssm_daught_track1_direct_length",
+          "ssm_daught_track1_length_ratio",
+          "ssm_daught_track1_max_dev",
+          "ssm_daught_track1_kine_energy_range",
+          "ssm_daught_track1_kine_energy_range_mu",
+          "ssm_daught_track1_kine_energy_range_p",
+          "ssm_daught_track1_kine_energy_range_e",
+          "ssm_daught_track1_kine_energy_cal",
+          "ssm_daught_track1_medium_dq_dx",
+          "ssm_daught_track1_x_dir",
+          "ssm_daught_track1_y_dir",
+          "ssm_daught_track1_z_dir",
+          "ssm_daught_track1_add_daught_track_counts_1",
+          "ssm_daught_track1_add_daught_all_counts_1",
+          "ssm_daught_track1_add_daught_track_counts_5",
+          "ssm_daught_track1_add_daught_all_counts_5",
+          "ssm_daught_track1_add_daught_track_counts_11",
+          "ssm_daught_track1_add_daught_all_counts_11",
+    
+          "ssm_daught_track2_pdg",
+          "ssm_daught_track2_score_mu_fwd",
+          "ssm_daught_track2_score_p_fwd",
+          "ssm_daught_track2_score_e_fwd",
+          "ssm_daught_track2_score_mu_bck",
+          "ssm_daught_track2_score_p_bck",
+          "ssm_daught_track2_score_e_bck",
+          "ssm_daught_track2_length",
+          "ssm_daught_track2_direct_length",
+          "ssm_daught_track2_length_ratio",
+          "ssm_daught_track2_max_dev",
+          "ssm_daught_track2_kine_energy_range",
+          "ssm_daught_track2_kine_energy_range_mu",
+          "ssm_daught_track2_kine_energy_range_p",
+          "ssm_daught_track2_kine_energy_range_e",
+          "ssm_daught_track2_kine_energy_cal",
+          "ssm_daught_track2_medium_dq_dx",
+          "ssm_daught_track2_x_dir",
+          "ssm_daught_track2_y_dir",
+          "ssm_daught_track2_z_dir",
+          "ssm_daught_track2_add_daught_track_counts_1",
+          "ssm_daught_track2_add_daught_all_counts_1",
+          "ssm_daught_track2_add_daught_track_counts_5",
+          "ssm_daught_track2_add_daught_all_counts_5",
+          "ssm_daught_track2_add_daught_track_counts_11",
+          "ssm_daught_track2_add_daught_all_counts_11",
+    
+          "ssm_prim_shw1_pdg",
+          "ssm_prim_shw1_score_mu_fwd",
+          "ssm_prim_shw1_score_p_fwd",
+          "ssm_prim_shw1_score_e_fwd",
+          "ssm_prim_shw1_score_mu_bck",
+          "ssm_prim_shw1_score_p_bck",
+          "ssm_prim_shw1_score_e_bck",
+          "ssm_prim_shw1_max_dev",
+          "ssm_prim_shw1_medium_dq_dx",
+          "ssm_prim_shw1_add_daught_track_counts_1",
+          "ssm_prim_shw1_add_daught_all_counts_1",
+          "ssm_prim_shw1_add_daught_track_counts_5",
+          "ssm_prim_shw1_add_daught_all_counts_5",
+          "ssm_prim_shw1_add_daught_track_counts_11",
+          "ssm_prim_shw1_add_daught_all_counts_11",
+    
+          "ssm_prim_shw2_pdg",
+          "ssm_prim_shw2_score_mu_fwd",
+          "ssm_prim_shw2_score_p_fwd",
+          "ssm_prim_shw2_score_e_fwd",
+          "ssm_prim_shw2_score_mu_bck",
+          "ssm_prim_shw2_score_p_bck",
+          "ssm_prim_shw2_score_e_bck",
+          "ssm_prim_shw2_max_dev",
+          "ssm_prim_shw2_medium_dq_dx",
+          "ssm_prim_shw2_add_daught_track_counts_1",
+          "ssm_prim_shw2_add_daught_all_counts_1",
+          "ssm_prim_shw2_add_daught_track_counts_5",
+          "ssm_prim_shw2_add_daught_all_counts_5",
+          "ssm_prim_shw2_add_daught_track_counts_11",
+          "ssm_prim_shw2_add_daught_all_counts_11",
+    
+          "ssm_daught_shw1_pdg",
+          "ssm_daught_shw1_score_mu_fwd",
+          "ssm_daught_shw1_score_p_fwd",
+          "ssm_daught_shw1_score_e_fwd",
+          "ssm_daught_shw1_score_mu_bck",
+          "ssm_daught_shw1_score_p_bck",
+          "ssm_daught_shw1_score_e_bck",
+          "ssm_daught_shw1_length",
+          "ssm_daught_shw1_direct_length",
+          "ssm_daught_shw1_length_ratio",
+          "ssm_daught_shw1_max_dev",
+          "ssm_daught_shw1_kine_energy_range",
+          "ssm_daught_shw1_kine_energy_range_mu",
+          "ssm_daught_shw1_kine_energy_range_p",
+          "ssm_daught_shw1_kine_energy_range_e",
+          "ssm_daught_shw1_kine_energy_cal",
+          'ssm_daught_shw1_kine_energy_best',
+          "ssm_daught_shw1_medium_dq_dx",
+          "ssm_daught_shw1_x_dir",
+          "ssm_daught_shw1_y_dir",
+          "ssm_daught_shw1_z_dir",
+          "ssm_daught_shw1_add_daught_track_counts_1",
+          "ssm_daught_shw1_add_daught_all_counts_1",
+          "ssm_daught_shw1_add_daught_track_counts_5",
+          "ssm_daught_shw1_add_daught_all_counts_5",
+          "ssm_daught_shw1_add_daught_track_counts_11",
+          "ssm_daught_shw1_add_daught_all_counts_11",
+    
+          "ssm_daught_shw2_pdg",
+          "ssm_daught_shw2_score_mu_fwd",
+          "ssm_daught_shw2_score_p_fwd",
+          "ssm_daught_shw2_score_e_fwd",
+          "ssm_daught_shw2_score_mu_bck",
+          "ssm_daught_shw2_score_p_bck",
+          "ssm_daught_shw2_score_e_bck",
+          "ssm_daught_shw2_length",
+          "ssm_daught_shw2_direct_length",
+          "ssm_daught_shw2_length_ratio",
+          "ssm_daught_shw2_max_dev",
+          "ssm_daught_shw2_kine_energy_range",
+          "ssm_daught_shw2_kine_energy_range_mu",
+          "ssm_daught_shw2_kine_energy_range_p",
+          "ssm_daught_shw2_kine_energy_range_e",
+          "ssm_daught_shw2_kine_energy_cal",
+          'ssm_daught_shw2_kine_energy_best',
+          "ssm_daught_shw2_medium_dq_dx",
+          "ssm_daught_shw2_x_dir",
+          "ssm_daught_shw2_y_dir",
+          "ssm_daught_shw2_z_dir",
+          "ssm_daught_shw2_add_daught_track_counts_1",
+          "ssm_daught_shw2_add_daught_all_counts_1",
+          "ssm_daught_shw2_add_daught_track_counts_5",
+          "ssm_daught_shw2_add_daught_all_counts_5",
+          "ssm_daught_shw2_add_daught_track_counts_11",
+          "ssm_daught_shw2_add_daught_all_counts_11",
+    
+          "ssm_nu_angle_z",
+          "ssm_nu_angle_target",
+          "ssm_nu_angle_absorber",
+          "ssm_nu_angle_vertical",
+          "ssm_prim_nu_angle_z",
+          "ssm_prim_nu_angle_target",
+          "ssm_prim_nu_angle_absorber",
+          "ssm_prim_nu_angle_vertical",
+          "ssm_con_nu_angle_z",
+          "ssm_con_nu_angle_target",
+          "ssm_con_nu_angle_absorber",
+          "ssm_con_nu_angle_vertical",
+          "ssm_track_angle_z",
+          "ssm_track_angle_target",
+          "ssm_track_angle_absorber",
+          "ssm_track_angle_vertical",
+
+          "ssm_offvtx_length",
+          "ssm_offvtx_energy",
+          "ssm_n_offvtx_tracks_1",
+          "ssm_n_offvtx_tracks_3",
+          "ssm_n_offvtx_tracks_5",
+          "ssm_n_offvtx_tracks_8",
+          "ssm_n_offvtx_tracks_11",
+          "ssm_n_offvtx_showers_1",
+          "ssm_n_offvtx_showers_3",
+          "ssm_n_offvtx_showers_5",
+          "ssm_n_offvtx_showers_8",
+          "ssm_n_offvtx_showers_11",
+          "ssm_offvtx_track1_pdg",
+          "ssm_offvtx_track1_score_mu_fwd",
+          "ssm_offvtx_track1_score_p_fwd",
+          "ssm_offvtx_track1_score_e_fwd",
+          "ssm_offvtx_track1_score_mu_bck",
+          "ssm_offvtx_track1_score_p_bck",
+          "ssm_offvtx_track1_score_e_bck",
+          "ssm_offvtx_track1_length",
+          "ssm_offvtx_track1_direct_length",
+          "ssm_offvtx_track1_max_dev",
+          "ssm_offvtx_track1_kine_energy_range",
+          "ssm_offvtx_track1_kine_energy_range_mu",
+          "ssm_offvtx_track1_kine_energy_range_p",
+          "ssm_offvtx_track1_kine_energy_range_e",
+          "ssm_offvtx_track1_kine_energy_cal",
+          "ssm_offvtx_track1_medium_dq_dx",
+          "ssm_offvtx_track1_x_dir",
+          "ssm_offvtx_track1_y_dir",
+          "ssm_offvtx_track1_z_dir",
+          "ssm_offvtx_track1_dist_mainvtx",
+          "ssm_offvtx_shw1_pdg_offvtx",
+          "ssm_offvtx_shw1_score_mu_fwd",
+          "ssm_offvtx_shw1_score_p_fwd",
+          "ssm_offvtx_shw1_score_e_fwd",
+          "ssm_offvtx_shw1_score_mu_bck",
+          "ssm_offvtx_shw1_score_p_bck",
+          "ssm_offvtx_shw1_score_e_bck",
+          "ssm_offvtx_shw1_length",
+          "ssm_offvtx_shw1_direct_length",
+          "ssm_offvtx_shw1_max_dev",
+          "ssm_offvtx_shw1_kine_energy_best",
+          "ssm_offvtx_shw1_kine_energy_range",
+          "ssm_offvtx_shw1_kine_energy_range_mu",
+          "ssm_offvtx_shw1_kine_energy_range_p",
+          "ssm_offvtx_shw1_kine_energy_range_e",
+          "ssm_offvtx_shw1_kine_energy_cal",
+          "ssm_offvtx_shw1_medium_dq_dx",
+          "ssm_offvtx_shw1_x_dir",
+          "ssm_offvtx_shw1_y_dir",
+          "ssm_offvtx_shw1_z_dir",
+          "ssm_offvtx_shw1_dist_mainvtx",
+
+          "ssm_kine_pio_mass",
+          "ssm_kine_pio_flag",
+          "ssm_kine_pio_vtx_dis",
+          "ssm_kine_pio_energy_1",
+          "ssm_kine_pio_theta_1",
+          "ssm_kine_pio_phi_1",
+          "ssm_kine_pio_dis_1",
+          "ssm_kine_pio_energy_2",
+          "ssm_kine_pio_theta_2",
+          "ssm_kine_pio_phi_2",
+          "ssm_kine_pio_dis_2",
+          "ssm_kine_pio_angle",
+    
+          "ssm_cosmict_flag_1", 
+          "ssm_cosmict_flag_2",  
+          "ssm_cosmict_flag_3",  
+          "ssm_cosmict_flag_4",  
+          "ssm_cosmict_flag_5", 
+          "ssm_cosmict_flag_6", 
+          "ssm_cosmict_flag_7", 
+          "ssm_cosmict_flag_8",  
+          "ssm_cosmict_flag_9",
+
+           "lm_cluster_length"
+]
+
+
+
+def bootstrap_confidence_interval(df, kine_var, bins, sig_query, sel_query, n_replicates=1000, confidence_level=95,weight_var="net_weight"):
+
+    bootstrap_replicates = []
+    for b in range(len(bins)-1):
+        bootstrap_replicates.append([])
+        
+    n_samples = int(df.shape[0]/40)
+    n_samples_weighted = np.sum(df[weight_var].to_numpy())
+    
+
+    print("Starting Bootstrap")
+    for uni in tqdm(range(n_replicates)):
+        
+        temp_n_samples_weighted = 0
+        
+        # Create a bootstrap sample by sampling with replacement
+        df_boot = df.sample(n=n_samples,weights=df[weight_var].to_numpy(),replace=True)
+        #while n_samples_weighted>temp_n_samples_weighted:
+        #    temp_df_boot = df.sample(n=1,weights=df[weight_var].to_numpy(),replace=True)
+        #    df_boot = pd.concat([df_boot, temp_df_boot], sort=False)
+        #    temp_n_samples_weighted = np.sum(df_boot[weight_var].to_numpy())
+            
+        df_sig =  df_boot.query(sig_query)
+        df_sig_sel =  df_sig.query(sel_query)
+        
+        sig, xx = np.histogram(df_sig[kine_var],bins=bins)
+        sig_sel, xx = np.histogram(df_sig_sel[kine_var],bins=bins)
+        
+        eff = np.zeros(n_samples)
+        
+        for b in range(len(bins)-1):
+            if sig[b]!=0: eff[b] = sig_sel[b]/sig[b]
+            bootstrap_replicates[b].append(eff[b])
+
+    # Calculate the percentiles for the confidence interval
+    lower_percentile = (100 - confidence_level) / 2
+    upper_percentile = 100 - lower_percentile
+
+    lower_bound = []
+    upper_bound = []
+    for b in range(len(bins)-1):
+        lower_bound.append(np.percentile(bootstrap_replicates[b], lower_percentile))
+        upper_bound.append(np.percentile(bootstrap_replicates[b], upper_percentile))
+
+    return lower_bound, upper_bound
+
+def bootstrap_err(df, kine_var, bins, sig_query, sel_query, n_replicates=1000, confidence_level=95,weight_var="net_weight"):
+    y_err = [[],[]]
+    
+    y_low_all,y_hi_all = bootstrap_confidence_interval(df, kine_var, bins, sig_query, sel_query, n_replicates=n_replicates, confidence_level=confidence_level,weight_var=weight_var)
+    
+    df_sig =  df.query(sig_query)
+    df_sig_sel =  df_sig.query(sel_query)
+    sig, xx = np.histogram(df_sig[kine_var],bins=bins,weights=df_sig[weight_var])
+    sig_sel, xx = np.histogram(df_sig_sel[kine_var],bins=bins,weights=df_sig_sel[weight_var])
+    
+    for i in range(len(bins)-1):
+        if sig[i] == 0:
+            y_err[0].append(0)
+            y_err[1].append(0)
+            continue
+            
+        y_low = y_low_all[i]
+        y_high = y_hi_all[i]
+        
+        y = sig_sel[i]/sig[i]
+        low_err = y-y_low
+        high_err = y_high-y
+        if low_err<0: low_err=0
+        if high_err<0: high_err=0
+        y_err[0].append(low_err)
+        y_err[1].append(high_err)
+    return y_err
 
 ####### BDT Training related ################## 
 def label_train(df,file_name):
@@ -53,6 +1023,27 @@ def label_train(df,file_name):
     
     df["is_train"] = is_train
     return df
+
+
+
+
+def add_bdt_scores(df,model,names,bdtvarname):
+    d_pred_df = df[names]
+    d_reg = xgb.DMatrix(d_pred_df, enable_categorical=True)
+    d_pred = model.predict(d_reg)
+    df[bdtvarname] = d_pred 
+    
+    ssm_kine_energy = df["ssm_kine_energy"].to_numpy()
+    kdar_score = df[bdtvarname].to_numpy()
+    
+    for i in tqdm(range(len(ssm_kine_energy))):
+        if ssm_kine_energy[i]<0: 
+            kdar_score[i] = -999
+
+    df[bdtvarname] = kdar_score
+
+    return df
+
 
 
 ####### Truth variable calculations ################## 

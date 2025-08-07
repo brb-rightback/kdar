@@ -6,6 +6,8 @@ import numpy as np
 import math
 from tqdm import tqdm
 
+from scipy.special import gamma
+
 import xgboost as xgb
 
 import general_functions as utils
@@ -903,7 +905,724 @@ train_vars_nokineprim = [
            "lm_cluster_length"
 ]
 
+train_vars_nokineprim_tvma = [
+("ssm_Nsm","D"),
+("ssm_Nsm_wivtx","D"),
+("ssm_dq_dx_fwd_1","D"),
+("ssm_dq_dx_fwd_2","D"),
+("ssm_dq_dx_fwd_3","D"),
+("ssm_dq_dx_fwd_4","D"),
+("ssm_dq_dx_fwd_5","D"),
+("ssm_dq_dx_bck_1","D"),
+("ssm_dq_dx_bck_2","D"),
+("ssm_dq_dx_bck_3","D"),
+("ssm_dq_dx_bck_4","D"),
+("ssm_dq_dx_bck_5","D"),
+("ssm_d_dq_dx_fwd_12","D"),
+("ssm_d_dq_dx_fwd_23","D"),
+("ssm_d_dq_dx_fwd_34","D"),
+("ssm_d_dq_dx_fwd_45","D"),
+("ssm_d_dq_dx_bck_12","D"),
+("ssm_d_dq_dx_bck_23","D"),
+("ssm_d_dq_dx_bck_34","D"),
+("ssm_d_dq_dx_bck_45","D"),
+("ssm_max_dq_dx_fwd_3","D"),
+("ssm_max_dq_dx_fwd_5","D"),
+("ssm_max_dq_dx_bck_3","D"),
+("ssm_max_dq_dx_bck_5","D"),
+("ssm_max_d_dq_dx_fwd_3","D"),
+("ssm_max_d_dq_dx_fwd_5","D"),
+("ssm_max_d_dq_dx_bck_3","D"),
+("ssm_max_d_dq_dx_bck_5","D"),
+("ssm_medium_dq_dx","D"),
+("ssm_medium_dq_dx_bp","D"),
+("ssm_vtx_activity","D"),
+("ssm_pdg","D"),
+("ssm_score_mu_fwd","D"),
+("ssm_score_p_fwd","D"),
+("ssm_score_e_fwd","D"),
+("ssm_score_mu_bck","D"),
+("ssm_score_p_bck","D"),
+("ssm_score_e_bck","D"),
+("ssm_score_mu_fwd_bp","D"),
+("ssm_score_p_fwd_bp","D"),
+("ssm_score_e_fwd_bp","D"),
+("ssm_length_ratio","D"),
+("ssm_n_prim_tracks_1","D"),
+("ssm_n_prim_tracks_3","D"),
+("ssm_n_prim_tracks_5","D"),
+("ssm_n_prim_tracks_8","D"),
+("ssm_n_prim_tracks_11","D"),
+("ssm_n_all_tracks_1","D"),
+("ssm_n_all_tracks_3","D"),
+("ssm_n_all_tracks_5","D"),
+("ssm_n_all_tracks_8","D"),
+("ssm_n_all_tracks_11","D"),
+("ssm_n_daughter_tracks_1","D"),
+("ssm_n_daughter_tracks_3","D"),
+("ssm_n_daughter_tracks_5","D"),
+("ssm_n_daughter_tracks_8","D"),
+("ssm_n_daughter_tracks_11","D"),
+("ssm_n_daughter_all_1","D"),
+("ssm_n_daughter_all_3","D"),
+("ssm_n_daughter_all_5","D"),
+("ssm_n_daughter_all_8","D"),
+("ssm_n_daughter_all_11","D"),
+("ssm_prim_track1_pdg","D"),
+("ssm_prim_track1_score_mu_fwd","D"),
+("ssm_prim_track1_score_p_fwd","D"),
+("ssm_prim_track1_score_e_fwd","D"),
+("ssm_prim_track1_score_mu_bck","D"),
+("ssm_prim_track1_score_p_bck","D"),
+("ssm_prim_track1_score_e_bck","D"),
+("ssm_prim_track1_max_dev","D"),
+("ssm_prim_track1_medium_dq_dx","D"),
+("ssm_prim_track1_add_daught_track_counts_1","D"),
+("ssm_prim_track1_add_daught_all_counts_1","D"),
+("ssm_prim_track1_add_daught_track_counts_5","D"),
+("ssm_prim_track1_add_daught_all_counts_5","D"),
+("ssm_prim_track1_add_daught_track_counts_11","D"),
+("ssm_prim_track1_add_daught_all_counts_11","D"),
+("ssm_prim_track2_pdg","D"),
+("ssm_prim_track2_score_mu_fwd","D"),
+("ssm_prim_track2_score_p_fwd","D"),
+("ssm_prim_track2_score_e_fwd","D"),
+("ssm_prim_track2_score_mu_bck","D"),
+("ssm_prim_track2_score_p_bck","D"),
+("ssm_prim_track2_score_e_bck","D"),
+("ssm_prim_track2_max_dev","D"),
+("ssm_prim_track2_medium_dq_dx","D"),
+("ssm_prim_track2_add_daught_track_counts_1","D"),
+("ssm_prim_track2_add_daught_all_counts_1","D"),
+("ssm_prim_track2_add_daught_track_counts_5","D"),
+("ssm_prim_track2_add_daught_all_counts_5","D"),
+("ssm_prim_track2_add_daught_track_counts_11","D"),
+("ssm_prim_track2_add_daught_all_counts_11","D"),
+("ssm_daught_track1_pdg","D"),
+("ssm_daught_track1_score_mu_fwd","D"),
+("ssm_daught_track1_score_p_fwd","D"),
+("ssm_daught_track1_score_e_fwd","D"),
+("ssm_daught_track1_score_mu_bck","D"),
+("ssm_daught_track1_score_p_bck","D"),
+("ssm_daught_track1_score_e_bck","D"),
+("ssm_daught_track1_length","D"),
+("ssm_daught_track1_direct_length","D"),
+("ssm_daught_track1_length_ratio","D"),
+("ssm_daught_track1_max_dev","D"),
+("ssm_daught_track1_kine_energy_range","D"),
+("ssm_daught_track1_kine_energy_range_mu","D"),
+("ssm_daught_track1_kine_energy_range_p","D"),
+("ssm_daught_track1_kine_energy_range_e","D"),
+("ssm_daught_track1_kine_energy_cal","D"),
+("ssm_daught_track1_medium_dq_dx","D"),
+("ssm_daught_track1_x_dir","D"),
+("ssm_daught_track1_y_dir","D"),
+("ssm_daught_track1_z_dir","D"),
+("ssm_daught_track1_add_daught_track_counts_1","D"),
+("ssm_daught_track1_add_daught_all_counts_1","D"),
+("ssm_daught_track1_add_daught_track_counts_5","D"),
+("ssm_daught_track1_add_daught_all_counts_5","D"),
+("ssm_daught_track1_add_daught_track_counts_11","D"),
+("ssm_daught_track1_add_daught_all_counts_11","D"),
+("ssm_daught_track2_pdg","D"),
+("ssm_daught_track2_score_mu_fwd","D"),
+("ssm_daught_track2_score_p_fwd","D"),
+("ssm_daught_track2_score_e_fwd","D"),
+("ssm_daught_track2_score_mu_bck","D"),
+("ssm_daught_track2_score_p_bck","D"),
+("ssm_daught_track2_score_e_bck","D"),
+("ssm_daught_track2_length","D"),
+("ssm_daught_track2_direct_length","D"),
+("ssm_daught_track2_length_ratio","D"),
+("ssm_daught_track2_max_dev","D"),
+("ssm_daught_track2_kine_energy_range","D"),
+("ssm_daught_track2_kine_energy_range_mu","D"),
+("ssm_daught_track2_kine_energy_range_p","D"),
+("ssm_daught_track2_kine_energy_range_e","D"),
+("ssm_daught_track2_kine_energy_cal","D"),
+("ssm_daught_track2_medium_dq_dx","D"),
+("ssm_daught_track2_x_dir","D"),
+("ssm_daught_track2_y_dir","D"),
+("ssm_daught_track2_z_dir","D"),
+("ssm_daught_track2_add_daught_track_counts_1","D"),
+("ssm_daught_track2_add_daught_all_counts_1","D"),
+("ssm_daught_track2_add_daught_track_counts_5","D"),
+("ssm_daught_track2_add_daught_all_counts_5","D"),
+("ssm_daught_track2_add_daught_track_counts_11","D"),
+("ssm_daught_track2_add_daught_all_counts_11","D"),
+("ssm_prim_shw1_pdg","D"),
+("ssm_prim_shw1_score_mu_fwd","D"),
+("ssm_prim_shw1_score_p_fwd","D"),
+("ssm_prim_shw1_score_e_fwd","D"),
+("ssm_prim_shw1_score_mu_bck","D"),
+("ssm_prim_shw1_score_p_bck","D"),
+("ssm_prim_shw1_score_e_bck","D"),
+("ssm_prim_shw1_max_dev","D"),
+("ssm_prim_shw1_medium_dq_dx","D"),
+("ssm_prim_shw1_add_daught_track_counts_1","D"),
+("ssm_prim_shw1_add_daught_all_counts_1","D"),
+("ssm_prim_shw1_add_daught_track_counts_5","D"),
+("ssm_prim_shw1_add_daught_all_counts_5","D"),
+("ssm_prim_shw1_add_daught_track_counts_11","D"),
+("ssm_prim_shw1_add_daught_all_counts_11","D"),
+("ssm_prim_shw2_pdg","D"),
+("ssm_prim_shw2_score_mu_fwd","D"),
+("ssm_prim_shw2_score_p_fwd","D"),
+("ssm_prim_shw2_score_e_fwd","D"),
+("ssm_prim_shw2_score_mu_bck","D"),
+("ssm_prim_shw2_score_p_bck","D"),
+("ssm_prim_shw2_score_e_bck","D"),
+("ssm_prim_shw2_max_dev","D"),
+("ssm_prim_shw2_medium_dq_dx","D"),
+("ssm_prim_shw2_add_daught_track_counts_1","D"),
+("ssm_prim_shw2_add_daught_all_counts_1","D"),
+("ssm_prim_shw2_add_daught_track_counts_5","D"),
+("ssm_prim_shw2_add_daught_all_counts_5","D"),
+("ssm_prim_shw2_add_daught_track_counts_11","D"),
+("ssm_prim_shw2_add_daught_all_counts_11","D"),
+("ssm_daught_shw1_pdg","D"),
+("ssm_daught_shw1_score_mu_fwd","D"),
+("ssm_daught_shw1_score_p_fwd","D"),
+("ssm_daught_shw1_score_e_fwd","D"),
+("ssm_daught_shw1_score_mu_bck","D"),
+("ssm_daught_shw1_score_p_bck","D"),
+("ssm_daught_shw1_score_e_bck","D"),
+("ssm_daught_shw1_length","D"),
+("ssm_daught_shw1_direct_length","D"),
+("ssm_daught_shw1_length_ratio","D"),
+("ssm_daught_shw1_max_dev","D"),
+("ssm_daught_shw1_kine_energy_range","D"),
+("ssm_daught_shw1_kine_energy_range_mu","D"),
+("ssm_daught_shw1_kine_energy_range_p","D"),
+("ssm_daught_shw1_kine_energy_range_e","D"),
+("ssm_daught_shw1_kine_energy_cal","D"),
+("ssm_daught_shw1_kine_energy_best","D"),
+("ssm_daught_shw1_medium_dq_dx","D"),
+("ssm_daught_shw1_x_dir","D"),
+("ssm_daught_shw1_y_dir","D"),
+("ssm_daught_shw1_z_dir","D"),
+("ssm_daught_shw1_add_daught_track_counts_1","D"),
+("ssm_daught_shw1_add_daught_all_counts_1","D"),
+("ssm_daught_shw1_add_daught_track_counts_5","D"),
+("ssm_daught_shw1_add_daught_all_counts_5","D"),
+("ssm_daught_shw1_add_daught_track_counts_11","D"),
+("ssm_daught_shw1_add_daught_all_counts_11","D"),
+("ssm_daught_shw2_pdg","D"),
+("ssm_daught_shw2_score_mu_fwd","D"),
+("ssm_daught_shw2_score_p_fwd","D"),
+("ssm_daught_shw2_score_e_fwd","D"),
+("ssm_daught_shw2_score_mu_bck","D"),
+("ssm_daught_shw2_score_p_bck","D"),
+("ssm_daught_shw2_score_e_bck","D"),
+("ssm_daught_shw2_length","D"),
+("ssm_daught_shw2_direct_length","D"),
+("ssm_daught_shw2_length_ratio","D"),
+("ssm_daught_shw2_max_dev","D"),
+("ssm_daught_shw2_kine_energy_range","D"),
+("ssm_daught_shw2_kine_energy_range_mu","D"),
+("ssm_daught_shw2_kine_energy_range_p","D"),
+("ssm_daught_shw2_kine_energy_range_e","D"),
+("ssm_daught_shw2_kine_energy_cal","D"),
+("ssm_daught_shw2_kine_energy_best","D"),
+("ssm_daught_shw2_medium_dq_dx","D"),
+("ssm_daught_shw2_x_dir","D"),
+("ssm_daught_shw2_y_dir","D"),
+("ssm_daught_shw2_z_dir","D"),
+("ssm_daught_shw2_add_daught_track_counts_1","D"),
+("ssm_daught_shw2_add_daught_all_counts_1","D"),
+("ssm_daught_shw2_add_daught_track_counts_5","D"),
+("ssm_daught_shw2_add_daught_all_counts_5","D"),
+("ssm_daught_shw2_add_daught_track_counts_11","D"),
+("ssm_daught_shw2_add_daught_all_counts_11","D"),
+("ssm_nu_angle_z","D"),
+("ssm_nu_angle_target","D"),
+("ssm_nu_angle_absorber","D"),
+("ssm_nu_angle_vertical","D"),
+("ssm_prim_nu_angle_z","D"),
+("ssm_prim_nu_angle_target","D"),
+("ssm_prim_nu_angle_absorber","D"),
+("ssm_prim_nu_angle_vertical","D"),
+("ssm_con_nu_angle_z","D"),
+("ssm_con_nu_angle_target","D"),
+("ssm_con_nu_angle_absorber","D"),
+("ssm_con_nu_angle_vertical","D"),
+("ssm_track_angle_z","D"),
+("ssm_track_angle_target","D"),
+("ssm_track_angle_absorber","D"),
+("ssm_track_angle_vertical","D"),
+("ssm_offvtx_length","D"),
+("ssm_offvtx_energy","D"),
+("ssm_n_offvtx_tracks_1","D"),
+("ssm_n_offvtx_tracks_3","D"),
+("ssm_n_offvtx_tracks_5","D"),
+("ssm_n_offvtx_tracks_8","D"),
+("ssm_n_offvtx_tracks_11","D"),
+("ssm_n_offvtx_showers_1","D"),
+("ssm_n_offvtx_showers_3","D"),
+("ssm_n_offvtx_showers_5","D"),
+("ssm_n_offvtx_showers_8","D"),
+("ssm_n_offvtx_showers_11","D"),
+("ssm_offvtx_track1_pdg","D"),
+("ssm_offvtx_track1_score_mu_fwd","D"),
+("ssm_offvtx_track1_score_p_fwd","D"),
+("ssm_offvtx_track1_score_e_fwd","D"),
+("ssm_offvtx_track1_score_mu_bck","D"),
+("ssm_offvtx_track1_score_p_bck","D"),
+("ssm_offvtx_track1_score_e_bck","D"),
+("ssm_offvtx_track1_length","D"),
+("ssm_offvtx_track1_direct_length","D"),
+("ssm_offvtx_track1_max_dev","D"),
+("ssm_offvtx_track1_kine_energy_range","D"),
+("ssm_offvtx_track1_kine_energy_range_mu","D"),
+("ssm_offvtx_track1_kine_energy_range_p","D"),
+("ssm_offvtx_track1_kine_energy_range_e","D"),
+("ssm_offvtx_track1_kine_energy_cal","D"),
+("ssm_offvtx_track1_medium_dq_dx","D"),
+("ssm_offvtx_track1_x_dir","D"),
+("ssm_offvtx_track1_y_dir","D"),
+("ssm_offvtx_track1_z_dir","D"),
+("ssm_offvtx_track1_dist_mainvtx","D"),
+("ssm_offvtx_shw1_pdg_offvtx","D"),
+("ssm_offvtx_shw1_score_mu_fwd","D"),
+("ssm_offvtx_shw1_score_p_fwd","D"),
+("ssm_offvtx_shw1_score_e_fwd","D"),
+("ssm_offvtx_shw1_score_mu_bck","D"),
+("ssm_offvtx_shw1_score_p_bck","D"),
+("ssm_offvtx_shw1_score_e_bck","D"),
+("ssm_offvtx_shw1_length","D"),
+("ssm_offvtx_shw1_direct_length","D"),
+("ssm_offvtx_shw1_max_dev","D"),
+("ssm_offvtx_shw1_kine_energy_best","D"),
+("ssm_offvtx_shw1_kine_energy_range","D"),
+("ssm_offvtx_shw1_kine_energy_range_mu","D"),
+("ssm_offvtx_shw1_kine_energy_range_p","D"),
+("ssm_offvtx_shw1_kine_energy_range_e","D"),
+("ssm_offvtx_shw1_kine_energy_cal","D"),
+("ssm_offvtx_shw1_medium_dq_dx","D"),
+("ssm_offvtx_shw1_x_dir","D"),
+("ssm_offvtx_shw1_y_dir","D"),
+("ssm_offvtx_shw1_z_dir","D"),
+("ssm_offvtx_shw1_dist_mainvtx","D"),
+("ssm_kine_pio_mass","D"),
+("ssm_kine_pio_flag","D"),
+("ssm_kine_pio_vtx_dis","D"),
+("ssm_kine_pio_energy_1","D"),
+("ssm_kine_pio_theta_1","D"),
+("ssm_kine_pio_phi_1","D"),
+("ssm_kine_pio_dis_1","D"),
+("ssm_kine_pio_energy_2","D"),
+("ssm_kine_pio_theta_2","D"),
+("ssm_kine_pio_phi_2","D"),
+("ssm_kine_pio_dis_2","D"),
+("ssm_kine_pio_angle","D"),
+("ssm_cosmict_flag_1","D"),
+("ssm_cosmict_flag_2","D"),
+("ssm_cosmict_flag_3","D"),
+("ssm_cosmict_flag_4","D"),
+("ssm_cosmict_flag_5","D"),
+("ssm_cosmict_flag_6","D"),
+("ssm_cosmict_flag_7","D"),
+("ssm_cosmict_flag_8","D"),
+("ssm_cosmict_flag_9","D"),
+("lm_cluster_length","D")
+]
 
+ssm_vars = [
+          "ssm_Nsm",
+          "ssm_Nsm_wivtx",
+          "ssm_dq_dx_fwd_1",
+          "ssm_dq_dx_fwd_2",
+          "ssm_dq_dx_fwd_3",
+          "ssm_dq_dx_fwd_4",
+          "ssm_dq_dx_fwd_5",
+          "ssm_dq_dx_bck_1",
+          "ssm_dq_dx_bck_2",
+          "ssm_dq_dx_bck_3",
+          "ssm_dq_dx_bck_4",
+          "ssm_dq_dx_bck_5",
+          "ssm_d_dq_dx_fwd_12",
+          "ssm_d_dq_dx_fwd_23",
+          "ssm_d_dq_dx_fwd_34",
+          "ssm_d_dq_dx_fwd_45",
+          "ssm_d_dq_dx_bck_12",
+          "ssm_d_dq_dx_bck_23",
+          "ssm_d_dq_dx_bck_34",
+          "ssm_d_dq_dx_bck_45",
+          "ssm_max_dq_dx_fwd_3",
+          "ssm_max_dq_dx_fwd_5",
+          "ssm_max_dq_dx_bck_3",
+          "ssm_max_dq_dx_bck_5",
+          "ssm_max_d_dq_dx_fwd_3",
+          "ssm_max_d_dq_dx_fwd_5",
+          "ssm_max_d_dq_dx_bck_3",
+          "ssm_max_d_dq_dx_bck_5",
+          "ssm_medium_dq_dx",
+          "ssm_medium_dq_dx_bp",
+          "ssm_angle_to_z",
+          "ssm_angle_to_target",
+          "ssm_angle_to_absorber",
+          "ssm_angle_to_vertical",
+          "ssm_x_dir",
+          "ssm_y_dir",
+          "ssm_z_dir",
+          "ssm_kine_energy",
+          "ssm_kine_energy_reduced",
+          "ssm_vtx_activity",
+          "ssm_pdg",
+          "ssm_dQ_dx_cut",
+          "ssm_score_mu_fwd",
+          "ssm_score_p_fwd",
+          "ssm_score_e_fwd",
+          "ssm_score_mu_bck",
+          "ssm_score_p_bck",
+          "ssm_score_e_bck",
+          "ssm_score_mu_fwd_bp",
+          "ssm_score_p_fwd_bp",
+          "ssm_score_e_fwd_bp",
+          "ssm_length",
+          "ssm_direct_length",
+          "ssm_length_ratio",
+          "ssm_max_dev",
+          "ssm_n_prim_tracks_1",
+          "ssm_n_prim_tracks_3",
+          "ssm_n_prim_tracks_5",
+          "ssm_n_prim_tracks_8",
+          "ssm_n_prim_tracks_11",
+          "ssm_n_all_tracks_1",
+          "ssm_n_all_tracks_3",
+          "ssm_n_all_tracks_5",
+          "ssm_n_all_tracks_8",
+          "ssm_n_all_tracks_11",
+          "ssm_n_daughter_tracks_1",
+          "ssm_n_daughter_tracks_3",
+          "ssm_n_daughter_tracks_5",
+          "ssm_n_daughter_tracks_8",
+          "ssm_n_daughter_tracks_11",
+          "ssm_n_daughter_all_1",
+          "ssm_n_daughter_all_3",
+          "ssm_n_daughter_all_5",
+          "ssm_n_daughter_all_8",
+          "ssm_n_daughter_all_11",
+          "ssm_nu_angle_z",
+          "ssm_nu_angle_target",
+          "ssm_nu_angle_absorber",
+          "ssm_nu_angle_vertical",   
+          "ssm_prim_nu_angle_z",
+          "ssm_prim_nu_angle_target",
+          "ssm_prim_nu_angle_absorber",
+          "ssm_prim_nu_angle_vertical",    
+          "ssm_con_nu_angle_z",
+          "ssm_con_nu_angle_target",
+          "ssm_con_nu_angle_absorber",
+          "ssm_con_nu_angle_vertical",   
+          "ssm_track_angle_z",
+          "ssm_track_angle_target",
+          "ssm_track_angle_absorber",
+          "ssm_track_angle_vertical",
+
+]
+
+
+ssm_prim_track1_vars = [
+          "ssm_prim_track1_pdg",
+          "ssm_prim_track1_score_mu_fwd",
+          "ssm_prim_track1_score_p_fwd",
+          "ssm_prim_track1_score_e_fwd",
+          "ssm_prim_track1_score_mu_bck",
+          "ssm_prim_track1_score_p_bck",
+          "ssm_prim_track1_score_e_bck",
+          "ssm_prim_track1_length",
+          "ssm_prim_track1_direct_length",
+          "ssm_prim_track1_length_ratio",
+          "ssm_prim_track1_max_dev",
+          "ssm_prim_track1_kine_energy_range",
+          "ssm_prim_track1_kine_energy_range_mu",
+          "ssm_prim_track1_kine_energy_range_p",
+          "ssm_prim_track1_kine_energy_range_e",
+          "ssm_prim_track1_kine_energy_cal",
+          "ssm_prim_track1_medium_dq_dx",
+          "ssm_prim_track1_x_dir",
+          "ssm_prim_track1_y_dir",
+          "ssm_prim_track1_z_dir",
+          "ssm_prim_track1_add_daught_track_counts_1",
+          "ssm_prim_track1_add_daught_all_counts_1",
+          "ssm_prim_track1_add_daught_track_counts_5",
+          "ssm_prim_track1_add_daught_all_counts_5",
+          "ssm_prim_track1_add_daught_track_counts_11",
+          "ssm_prim_track1_add_daught_all_counts_11"
+]
+    
+ssm_prim_track2_vars = [
+          "ssm_prim_track2_pdg",
+          "ssm_prim_track2_score_mu_fwd",
+          "ssm_prim_track2_score_p_fwd",
+          "ssm_prim_track2_score_e_fwd",
+          "ssm_prim_track2_score_mu_bck",
+          "ssm_prim_track2_score_p_bck",
+          "ssm_prim_track2_score_e_bck",
+          "ssm_prim_track2_length",
+          "ssm_prim_track2_direct_length",
+          "ssm_prim_track2_length_ratio",
+          "ssm_prim_track2_max_dev",
+          "ssm_prim_track2_kine_energy_range",
+          "ssm_prim_track2_kine_energy_range_mu",
+          "ssm_prim_track2_kine_energy_range_p",
+          "ssm_prim_track2_kine_energy_range_e",
+          "ssm_prim_track2_kine_energy_cal",
+          "ssm_prim_track2_medium_dq_dx",
+          "ssm_prim_track2_x_dir",
+          "ssm_prim_track2_y_dir",
+          "ssm_prim_track2_z_dir",
+          "ssm_prim_track2_add_daught_track_counts_1",
+          "ssm_prim_track2_add_daught_all_counts_1",
+          "ssm_prim_track2_add_daught_track_counts_5",
+          "ssm_prim_track2_add_daught_all_counts_5",
+          "ssm_prim_track2_add_daught_track_counts_11",
+          "ssm_prim_track2_add_daught_all_counts_11"
+]
+
+ssm_daught_track1_vars = [
+          "ssm_daught_track1_pdg",
+          "ssm_daught_track1_score_mu_fwd",
+          "ssm_daught_track1_score_p_fwd",
+          "ssm_daught_track1_score_e_fwd",
+          "ssm_daught_track1_score_mu_bck",
+          "ssm_daught_track1_score_p_bck",
+          "ssm_daught_track1_score_e_bck",
+          "ssm_daught_track1_length",
+          "ssm_daught_track1_direct_length",
+          "ssm_daught_track1_length_ratio",
+          "ssm_daught_track1_max_dev",
+          "ssm_daught_track1_kine_energy_range",
+          "ssm_daught_track1_kine_energy_range_mu",
+          "ssm_daught_track1_kine_energy_range_p",
+          "ssm_daught_track1_kine_energy_range_e",
+          "ssm_daught_track1_kine_energy_cal",
+          "ssm_daught_track1_medium_dq_dx",
+          "ssm_daught_track1_x_dir",
+          "ssm_daught_track1_y_dir",
+          "ssm_daught_track1_z_dir",
+          "ssm_daught_track1_add_daught_track_counts_1",
+          "ssm_daught_track1_add_daught_all_counts_1",
+          "ssm_daught_track1_add_daught_track_counts_5",
+          "ssm_daught_track1_add_daught_all_counts_5",
+          "ssm_daught_track1_add_daught_track_counts_11",
+          "ssm_daught_track1_add_daught_all_counts_11",
+]
+ssm_daught_track2_vars = [
+          "ssm_daught_track2_pdg",
+          "ssm_daught_track2_score_mu_fwd",
+          "ssm_daught_track2_score_p_fwd",
+          "ssm_daught_track2_score_e_fwd",
+          "ssm_daught_track2_score_mu_bck",
+          "ssm_daught_track2_score_p_bck",
+          "ssm_daught_track2_score_e_bck",
+          "ssm_daught_track2_length",
+          "ssm_daught_track2_direct_length",
+          "ssm_daught_track2_length_ratio",
+          "ssm_daught_track2_max_dev",
+          "ssm_daught_track2_kine_energy_range",
+          "ssm_daught_track2_kine_energy_range_mu",
+          "ssm_daught_track2_kine_energy_range_p",
+          "ssm_daught_track2_kine_energy_range_e",
+          "ssm_daught_track2_kine_energy_cal",
+          "ssm_daught_track2_medium_dq_dx",
+          "ssm_daught_track2_x_dir",
+          "ssm_daught_track2_y_dir",
+          "ssm_daught_track2_z_dir",
+          "ssm_daught_track2_add_daught_track_counts_1",
+          "ssm_daught_track2_add_daught_all_counts_1",
+          "ssm_daught_track2_add_daught_track_counts_5",
+          "ssm_daught_track2_add_daught_all_counts_5",
+          "ssm_daught_track2_add_daught_track_counts_11",
+          "ssm_daught_track2_add_daught_all_counts_11",
+]
+
+ssm_prim_shw1_vars = [
+          "ssm_prim_shw1_pdg",
+          "ssm_prim_shw1_score_mu_fwd",
+          "ssm_prim_shw1_score_p_fwd",
+          "ssm_prim_shw1_score_e_fwd",
+          "ssm_prim_shw1_score_mu_bck",
+          "ssm_prim_shw1_score_p_bck",
+          "ssm_prim_shw1_score_e_bck",
+          "ssm_prim_shw1_length",
+          "ssm_prim_shw1_direct_length",
+          "ssm_prim_shw1_length_ratio",
+          "ssm_prim_shw1_max_dev",
+          "ssm_prim_shw1_kine_energy_range",
+          "ssm_prim_shw1_kine_energy_range_mu",
+          "ssm_prim_shw1_kine_energy_range_p",
+          "ssm_prim_shw1_kine_energy_range_e",
+          "ssm_prim_shw1_kine_energy_cal",
+          "ssm_prim_shw1_kine_energy_best",
+          "ssm_prim_shw1_medium_dq_dx",
+          "ssm_prim_shw1_x_dir",
+          "ssm_prim_shw1_y_dir",
+          "ssm_prim_shw1_z_dir",
+          "ssm_prim_shw1_add_daught_track_counts_1",
+          "ssm_prim_shw1_add_daught_all_counts_1",
+          "ssm_prim_shw1_add_daught_track_counts_5",
+          "ssm_prim_shw1_add_daught_all_counts_5",
+          "ssm_prim_shw1_add_daught_track_counts_11",
+          "ssm_prim_shw1_add_daught_all_counts_11",
+]
+ssm_prim_shw2_vars = [
+          "ssm_prim_shw2_pdg",
+          "ssm_prim_shw2_score_mu_fwd",
+          "ssm_prim_shw2_score_p_fwd",
+          "ssm_prim_shw2_score_e_fwd",
+          "ssm_prim_shw2_score_mu_bck",
+          "ssm_prim_shw2_score_p_bck",
+          "ssm_prim_shw2_score_e_bck",
+          "ssm_prim_shw2_length",
+          "ssm_prim_shw2_direct_length",
+          "ssm_prim_shw2_length_ratio",
+          "ssm_prim_shw2_max_dev",
+          "ssm_prim_shw2_kine_energy_range",
+          "ssm_prim_shw2_kine_energy_range_mu",
+          "ssm_prim_shw2_kine_energy_range_p",
+          "ssm_prim_shw2_kine_energy_range_e",
+          "ssm_prim_shw2_kine_energy_cal",
+          "ssm_prim_shw2_kine_energy_best",
+          "ssm_prim_shw2_medium_dq_dx",
+          "ssm_prim_shw2_x_dir",
+          "ssm_prim_shw2_y_dir",
+          "ssm_prim_shw2_z_dir",
+          "ssm_prim_shw2_add_daught_track_counts_1",
+          "ssm_prim_shw2_add_daught_all_counts_1",
+          "ssm_prim_shw2_add_daught_track_counts_5",
+          "ssm_prim_shw2_add_daught_all_counts_5",
+          "ssm_prim_shw2_add_daught_track_counts_11",
+          "ssm_prim_shw2_add_daught_all_counts_11"
+]
+ssm_daught_shw1_vars = [
+          "ssm_daught_shw1_pdg",
+          "ssm_daught_shw1_score_mu_fwd",
+          "ssm_daught_shw1_score_p_fwd",
+          "ssm_daught_shw1_score_e_fwd",
+          "ssm_daught_shw1_score_mu_bck",
+          "ssm_daught_shw1_score_p_bck",
+          "ssm_daught_shw1_score_e_bck",
+          "ssm_daught_shw1_length",
+          "ssm_daught_shw1_direct_length",
+          "ssm_daught_shw1_length_ratio",
+          "ssm_daught_shw1_max_dev",
+          "ssm_daught_shw1_kine_energy_range",
+          "ssm_daught_shw1_kine_energy_range_mu",
+          "ssm_daught_shw1_kine_energy_range_p",
+          "ssm_daught_shw1_kine_energy_range_e",
+          "ssm_daught_shw1_kine_energy_cal",
+          "ssm_daught_shw1_kine_energy_best",
+          "ssm_daught_shw1_medium_dq_dx",
+          "ssm_daught_shw1_x_dir",
+          "ssm_daught_shw1_y_dir",
+          "ssm_daught_shw1_z_dir",
+          "ssm_daught_shw1_add_daught_track_counts_1",
+          "ssm_daught_shw1_add_daught_all_counts_1",
+          "ssm_daught_shw1_add_daught_track_counts_5",
+          "ssm_daught_shw1_add_daught_all_counts_5",
+          "ssm_daught_shw1_add_daught_track_counts_11",
+          "ssm_daught_shw1_add_daught_all_counts_11",
+]
+ssm_daught_shw2_vars = [
+          "ssm_daught_shw2_pdg",
+          "ssm_daught_shw2_score_mu_fwd",
+          "ssm_daught_shw2_score_p_fwd",
+          "ssm_daught_shw2_score_e_fwd",
+          "ssm_daught_shw2_score_mu_bck",
+          "ssm_daught_shw2_score_p_bck",
+          "ssm_daught_shw2_score_e_bck",
+          "ssm_daught_shw2_length",
+          "ssm_daught_shw2_direct_length",
+          "ssm_daught_shw2_length_ratio",
+          "ssm_daught_shw2_max_dev",
+          "ssm_daught_shw2_kine_energy_range",
+          "ssm_daught_shw2_kine_energy_range_mu",
+          "ssm_daught_shw2_kine_energy_range_p",
+          "ssm_daught_shw2_kine_energy_range_e",
+          "ssm_daught_shw2_kine_energy_cal",
+          "ssm_daught_shw2_kine_energy_best",
+          "ssm_daught_shw2_medium_dq_dx",
+          "ssm_daught_shw2_x_dir",
+          "ssm_daught_shw2_y_dir",
+          "ssm_daught_shw2_z_dir",
+          "ssm_daught_shw2_add_daught_track_counts_1",
+          "ssm_daught_shw2_add_daught_all_counts_1",
+          "ssm_daught_shw2_add_daught_track_counts_5",
+          "ssm_daught_shw2_add_daught_all_counts_5",
+          "ssm_daught_shw2_add_daught_track_counts_11",
+          "ssm_daught_shw2_add_daught_all_counts_11"
+]
+
+
+ssm_offvtx_vars = [
+              "ssm_offvtx_length",
+          "ssm_offvtx_energy",
+          "ssm_n_offvtx_tracks_1",
+          "ssm_n_offvtx_tracks_3",
+          "ssm_n_offvtx_tracks_5",
+          "ssm_n_offvtx_tracks_8",
+          "ssm_n_offvtx_tracks_11",
+          "ssm_n_offvtx_showers_1",
+          "ssm_n_offvtx_showers_3",
+          "ssm_n_offvtx_showers_5",
+          "ssm_n_offvtx_showers_8",
+          "ssm_n_offvtx_showers_11",
+]
+
+ssm_offvtx_track_vars = [
+          "ssm_offvtx_track1_pdg",
+          "ssm_offvtx_track1_score_mu_fwd",
+          "ssm_offvtx_track1_score_p_fwd",
+          "ssm_offvtx_track1_score_e_fwd",
+          "ssm_offvtx_track1_score_mu_bck",
+          "ssm_offvtx_track1_score_p_bck",
+          "ssm_offvtx_track1_score_e_bck",
+          "ssm_offvtx_track1_length",
+          "ssm_offvtx_track1_direct_length",
+          "ssm_offvtx_track1_max_dev",
+          "ssm_offvtx_track1_kine_energy_range",
+          "ssm_offvtx_track1_kine_energy_range_mu",
+          "ssm_offvtx_track1_kine_energy_range_p",
+          "ssm_offvtx_track1_kine_energy_range_e",
+          "ssm_offvtx_track1_kine_energy_cal",
+          "ssm_offvtx_track1_medium_dq_dx",
+          "ssm_offvtx_track1_x_dir",
+          "ssm_offvtx_track1_y_dir",
+          "ssm_offvtx_track1_z_dir",
+          "ssm_offvtx_track1_dist_mainvtx",
+]
+
+ssm_offvtx_shw_vars = [
+          "ssm_offvtx_shw1_pdg_offvtx",
+          "ssm_offvtx_shw1_score_mu_fwd",
+          "ssm_offvtx_shw1_score_p_fwd",
+          "ssm_offvtx_shw1_score_e_fwd",
+          "ssm_offvtx_shw1_score_mu_bck",
+          "ssm_offvtx_shw1_score_p_bck",
+          "ssm_offvtx_shw1_score_e_bck",
+          "ssm_offvtx_shw1_length",
+          "ssm_offvtx_shw1_direct_length",
+          "ssm_offvtx_shw1_max_dev",
+          "ssm_offvtx_shw1_kine_energy_best",
+          "ssm_offvtx_shw1_kine_energy_range",
+          "ssm_offvtx_shw1_kine_energy_range_mu",
+          "ssm_offvtx_shw1_kine_energy_range_p",
+          "ssm_offvtx_shw1_kine_energy_range_e",
+          "ssm_offvtx_shw1_kine_energy_cal",
+          "ssm_offvtx_shw1_medium_dq_dx",
+          "ssm_offvtx_shw1_x_dir",
+          "ssm_offvtx_shw1_y_dir",
+          "ssm_offvtx_shw1_z_dir",
+          "ssm_offvtx_shw1_dist_mainvtx",
+]
+
+other_vars = ["ssm_kine_reco_Enu","lm_cluster_length",
+              "ssm_kine_pio_mass","ssm_kine_pio_dis_1","ssm_kine_pio_dis_2","ssm_kine_pio_energy_1", "ssm_kine_pio_energy_2",
+              'ssm_cosmict_flag_1', 'ssm_cosmict_flag_2', 'ssm_cosmict_flag_3', 'ssm_cosmict_flag_4', 'ssm_cosmict_flag_5', 'ssm_cosmict_flag_6', 'cosmict_flag_7', 'ssm_cosmict_flag_8', 'ssm_cosmict_flag_9',
+            'flash_predPe','flash_measPe'
+             ]
 
 def bootstrap_confidence_interval(df, kine_var, bins, sig_query, sel_query, n_replicates=1000, confidence_level=95,weight_var="net_weight"):
 
@@ -1043,6 +1762,88 @@ def add_bdt_scores(df,model,names,bdtvarname):
     df[bdtvarname] = kdar_score
 
     return df
+
+
+# this code saves the xgboost model in a TVMA-friendly format
+# from https://gist.github.com/hqucms/56844f4d1e04757704f6afcdaa6f65a8, changing the print statements to python 3 syntax
+import re
+import xml.etree.cElementTree as ET
+regex_float_pattern = r'[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?'
+
+def build_tree(xgtree, base_xml_element, var_indices):
+    parent_element_dict = {'0':base_xml_element}
+    pos_dict = {'0':'s'}
+    for line in xgtree.split('\n'):
+        if not line: continue
+        if ':leaf=' in line:
+            #leaf node
+            result = re.match(r'(\t*)(\d+):leaf=({0})$'.format(regex_float_pattern), line)
+            if not result:
+                print(line)
+            depth = result.group(1).count('\t')
+            inode = result.group(2)
+            res = result.group(3)
+            node_elementTree = ET.SubElement(parent_element_dict[inode], "Node", pos=str(pos_dict[inode]),
+                                             depth=str(depth), NCoef="0", IVar="-1", Cut="0.0e+00", cType="1", res=str(res), rms="0.0e+00", purity="0.0e+00", nType="-99")
+        else:
+            #\t\t3:[var_topcand_mass<138.19] yes=7,no=8,missing=7
+            result = re.match(r'(\t*)([0-9]+):\[(?P<var>.+)<(?P<cut>{0})\]\syes=(?P<yes>\d+),no=(?P<no>\d+)'.format(regex_float_pattern),line)
+            if not result:
+                print(line)
+            depth = result.group(1).count('\t')
+            inode = result.group(2)
+            var = result.group('var')
+            cut = result.group('cut')
+            lnode = result.group('yes')
+            rnode = result.group('no')
+            pos_dict[lnode] = 'l'
+            pos_dict[rnode] = 'r'
+            node_elementTree = ET.SubElement(parent_element_dict[inode], "Node", pos=str(pos_dict[inode]),
+                                             depth=str(depth), NCoef="0", IVar=str(var_indices[var]), Cut=str(cut),
+                                             cType="1", res="0.0e+00", rms="0.0e+00", purity="0.0e+00", nType="0")
+            parent_element_dict[lnode] = node_elementTree
+            parent_element_dict[rnode] = node_elementTree
+            
+def convert_model(model, input_variables, output_xml):
+    NTrees = len(model)
+    var_list = input_variables
+    var_indices = {}
+    
+    # <MethodSetup>
+    MethodSetup = ET.Element("MethodSetup", Method="BDT::BDT")
+
+    # <Variables>
+    Variables = ET.SubElement(MethodSetup, "Variables", NVar=str(len(var_list)))
+    for ind, val in enumerate(var_list):
+        name = val[0]
+        var_type = val[1]
+        var_indices[name] = ind
+        Variable = ET.SubElement(Variables, "Variable", VarIndex=str(ind), Type=val[1], 
+            Expression=name, Label=name, Title=name, Unit="", Internal=name, 
+            Min="0.0e+00", Max="0.0e+00")
+    # <GeneralInfo>
+    GeneralInfo = ET.SubElement(MethodSetup, "GeneralInfo")
+    Info_Creator = ET.SubElement(GeneralInfo, "Info", name="Creator", value="xgboost2TMVA")
+    Info_AnalysisType = ET.SubElement(GeneralInfo, "Info", name="AnalysisType", value="Classification")
+
+    # <Options>
+    Options = ET.SubElement(MethodSetup, "Options")
+    Option_NodePurityLimit = ET.SubElement(Options, "Option", name="NodePurityLimit", modified="No").text = "5.00e-01"
+    Option_BoostType = ET.SubElement(Options, "Option", name="BoostType", modified="Yes").text = "Grad"
+    
+    # <Weights>
+    Weights = ET.SubElement(MethodSetup, "Weights", NTrees=str(NTrees), AnalysisType="1")
+    
+    for itree in range(NTrees):
+        BinaryTree = ET.SubElement(Weights, "BinaryTree", type="DecisionTree", boostWeight="1.0e+00", itree=str(itree))
+        build_tree(model[itree], BinaryTree, var_indices)
+        
+    tree = ET.ElementTree(MethodSetup)
+    tree.write(output_xml)
+    # format it with 'xmllint --format'
+    
+
+
 
 
 
@@ -1196,7 +1997,7 @@ def add_truth_proton_info(df):
     truth_nuPdgs = df["truth_nuPdg"].to_numpy()
     truth_pdgs = df["truth_pdg"].to_numpy()
     truth_mothers = df["truth_mother"].to_numpy()
-    truth_startMomentums = df["truth_startMomentum"].to_numpy()
+    truth_startMomentums = df["truth_startMomentum"].to_numpy(dtype=list)
     
     num_protons_all = []
     num_protons_all_th35 = []
@@ -1258,63 +2059,63 @@ def add_truth_proton_info(df):
         imax_prim_p_Py = 0
         imax_prim_p_Pz = 0
     
-
-        for j in range(len(truth_startMomentum_list)):
-
-            if abs(truth_pdg_list[j]) != 2212: continue
-
-            if truth_mother_list[j] != 0: # non-primary
-
-                if truth_startMomentum_list[j][3]-0.938272>imax_p_energy: 
-                    isubsub_p_energy = isub_p_energy
-                    isub_p_energy = imax_p_energy
-                    imax_p_energy = truth_startMomentum_list[j][3]-0.938272
-                    proton_theta, proton_phi = utils. get_angle(truth_startMomentum_list[j][0], truth_startMomentum_list[j][1], truth_startMomentum_list[j][2])
-                elif truth_startMomentum_list[j][3]-0.938272>isub_p_energy: 
-                    isubsub_p_energy = isub_p_energy
-                    isub_p_energy = truth_startMomentum_list[j][3]-0.938272
-                elif truth_startMomentum_list[j][3]-0.938272>isubsub_p_energy: 
-                    isubsub_p_energy = truth_startMomentum_list[j][3]-0.938272 
-                num_proton += 1
-                if truth_startMomentum_list[j][3]-0.938272>0.035: num_proton_th35 += 1
-
-            else:
-
-                isum_prim_p_energy+=truth_startMomentum_list[j][3]-0.938272
-                
-                num_prim_proton += 1
-                num_proton += 1
-                if truth_startMomentum_list[j][3]-0.938272>0.035:
-                    num_prim_proton_th35 += 1
-                    num_proton_th35 += 1
-                if truth_startMomentum_list[j][3]-0.938272>imax_p_energy: 
-                    isubsub_p_energy = isub_p_energy
-                    isub_p_energy = imax_p_energy
-                    imax_p_energy = truth_startMomentum_list[j][3]-0.938272
-                    proton_theta, proton_phi = utils. get_angle(truth_startMomentum_list[j][0], truth_startMomentum_list[j][1], truth_startMomentum_list[j][2])
-                elif truth_startMomentum_list[j][3]-0.938272>isub_p_energy: 
-                    isubsub_p_energy = isub_p_energy
-                    isub_p_energy = truth_startMomentum_list[j][3]-0.938272
-                elif truth_startMomentum_list[j][3]-0.938272>isubsub_p_energy: 
-                    isubsub_p_energy = truth_startMomentum_list[j][3]-0.938272
-                if truth_startMomentum_list[j][3]-0.938272>imax_prim_p_energy: 
-                    isubsub_prim_p_energy = isub_prim_p_energy
-                    isub_prim_p_energy = imax_prim_p_energy
-                    imax_prim_p_energy = truth_startMomentum_list[j][3]-0.938272
-                    prim_proton_theta, prim_proton_phi = utils. get_angle(truth_startMomentum_list[j][0], truth_startMomentum_list[j][1], truth_startMomentum_list[j][2])
-                    imax_prim_p_Px = truth_startMomentum_list[j][0]
-                    imax_prim_p_Py = truth_startMomentum_list[j][1]
-                    imax_prim_p_Pz = truth_startMomentum_list[j][2]
-                elif truth_startMomentum_list[j][3]-0.938272>isub_prim_p_energy: 
-                    isubsub_prim_p_energy = isub_p_energy
-                    isub_prim_p_energy = truth_startMomentum_list[j][3]-0.938272
-                elif truth_startMomentum_list[j][3]-0.938272>isubsub_prim_p_energy: 
-                    isubsub_prim_p_energy = truth_startMomentum_list[j][3]-0.938272
-
-                if truth_startMomentum_list[j][3]-0.938272<imin_p_energy or imin_p_energy==0:
-                    imin_p_energy = truth_startMomentum_list[j][3]-0.938272
-                if truth_startMomentum_list[j][3]-0.938272<imin_prim_p_energy or imin_prim_p_energy==0:
-                    imin_prim_p_energy = truth_startMomentum_list[j][3]-0.938272
+        if not isinstance(truth_startMomentum_list, float):
+            for j in range(len(truth_startMomentum_list)):
+    
+                if abs(truth_pdg_list[j]) != 2212: continue
+    
+                if truth_mother_list[j] != 0: # non-primary
+    
+                    if truth_startMomentum_list[j][3]-0.938272>imax_p_energy: 
+                        isubsub_p_energy = isub_p_energy
+                        isub_p_energy = imax_p_energy
+                        imax_p_energy = truth_startMomentum_list[j][3]-0.938272
+                        proton_theta, proton_phi = utils. get_angle(truth_startMomentum_list[j][0], truth_startMomentum_list[j][1], truth_startMomentum_list[j][2])
+                    elif truth_startMomentum_list[j][3]-0.938272>isub_p_energy: 
+                        isubsub_p_energy = isub_p_energy
+                        isub_p_energy = truth_startMomentum_list[j][3]-0.938272
+                    elif truth_startMomentum_list[j][3]-0.938272>isubsub_p_energy: 
+                        isubsub_p_energy = truth_startMomentum_list[j][3]-0.938272 
+                    num_proton += 1
+                    if truth_startMomentum_list[j][3]-0.938272>0.035: num_proton_th35 += 1
+    
+                else:
+    
+                    isum_prim_p_energy+=truth_startMomentum_list[j][3]-0.938272
+                    
+                    num_prim_proton += 1
+                    num_proton += 1
+                    if truth_startMomentum_list[j][3]-0.938272>0.035:
+                        num_prim_proton_th35 += 1
+                        num_proton_th35 += 1
+                    if truth_startMomentum_list[j][3]-0.938272>imax_p_energy: 
+                        isubsub_p_energy = isub_p_energy
+                        isub_p_energy = imax_p_energy
+                        imax_p_energy = truth_startMomentum_list[j][3]-0.938272
+                        proton_theta, proton_phi = utils. get_angle(truth_startMomentum_list[j][0], truth_startMomentum_list[j][1], truth_startMomentum_list[j][2])
+                    elif truth_startMomentum_list[j][3]-0.938272>isub_p_energy: 
+                        isubsub_p_energy = isub_p_energy
+                        isub_p_energy = truth_startMomentum_list[j][3]-0.938272
+                    elif truth_startMomentum_list[j][3]-0.938272>isubsub_p_energy: 
+                        isubsub_p_energy = truth_startMomentum_list[j][3]-0.938272
+                    if truth_startMomentum_list[j][3]-0.938272>imax_prim_p_energy: 
+                        isubsub_prim_p_energy = isub_prim_p_energy
+                        isub_prim_p_energy = imax_prim_p_energy
+                        imax_prim_p_energy = truth_startMomentum_list[j][3]-0.938272
+                        prim_proton_theta, prim_proton_phi = utils. get_angle(truth_startMomentum_list[j][0], truth_startMomentum_list[j][1], truth_startMomentum_list[j][2])
+                        imax_prim_p_Px = truth_startMomentum_list[j][0]
+                        imax_prim_p_Py = truth_startMomentum_list[j][1]
+                        imax_prim_p_Pz = truth_startMomentum_list[j][2]
+                    elif truth_startMomentum_list[j][3]-0.938272>isub_prim_p_energy: 
+                        isubsub_prim_p_energy = isub_p_energy
+                        isub_prim_p_energy = truth_startMomentum_list[j][3]-0.938272
+                    elif truth_startMomentum_list[j][3]-0.938272>isubsub_prim_p_energy: 
+                        isubsub_prim_p_energy = truth_startMomentum_list[j][3]-0.938272
+    
+                    if truth_startMomentum_list[j][3]-0.938272<imin_p_energy or imin_p_energy==0:
+                        imin_p_energy = truth_startMomentum_list[j][3]-0.938272
+                    if truth_startMomentum_list[j][3]-0.938272<imin_prim_p_energy or imin_prim_p_energy==0:
+                        imin_prim_p_energy = truth_startMomentum_list[j][3]-0.938272
                 
 
     
@@ -1592,6 +2393,7 @@ def add_ssm_kine_info(df):
     df["ssm_pt"] = ssm_pt
     df["ssm_cosMu"] = cos
     df["ssm_angle_to_absorber_deg"] = df["ssm_angle_to_absorber"].to_numpy()*180/3.14
+    df["ssm_cos_angle_to_absorber"] = np.cos(df["ssm_angle_to_absorber"].to_numpy())
     df["ssm_Em"] = ssm_Em
     df["ssm_E"] = ssm_E
     df["ssm_Eh"] = ssm_Eh
@@ -1724,6 +2526,20 @@ def add_reco_proton_muon(df):
 
     return df
 
+def add_ssm_vtx_mult(df):
+    ssm_kine_energy = df["ssm_kine_energy"].to_numpy()
+    ssm_prim_track1_kine_energy_range = df["ssm_prim_track1_kine_energy_range"].to_numpy()
+    ssm_vtx_activity = df["ssm_vtx_activity"].to_numpy()
+    ssm_vtx_mult = []
+    for i in range(len(ssm_kine_energy)):
+        this_ssm_vtx_mult = -999
+        if(ssm_kine_energy[i])>0:
+            this_ssm_vtx_mult = 0
+            if ssm_prim_track1_kine_energy_range[i]>0: this_ssm_vtx_mult = 2
+            elif ssm_vtx_activity[i]>0: this_ssm_vtx_mult = 1
+        ssm_vtx_mult.append(this_ssm_vtx_mult)
+    df["ssm_vtx_mult"] = ssm_vtx_mult
+    return df
 
 def add_ssm_reco_dirt_vars(df):
     ssmsp_x = df["ssm_vtxX"].to_numpy()
@@ -1772,6 +2588,38 @@ def add_ssm_reco_dirt_vars(df):
     df["tbRV_nox"] = tbRV_nox_list
 
     return df
+
+
+def get_merged_time(df,time_var='evtTimeNS',Shift=0,gap=18.8305):
+    
+    evtTimeNS = np.nan_to_num(df[time_var].to_numpy(),nan=-999999)
+    
+    new_times = []
+    abs_new_times = []
+    
+    for i in range(len(evtTimeNS)):  
+        TThelp=0
+        TThelp = evtTimeNS[i]-Shift+gap*0.5
+        TT_merged = -9999. 
+        if evtTimeNS[i]>0:
+            TT_merged=(TThelp-(int((TThelp)/gap))*gap)-gap*0.5        
+            new_times.append(TT_merged)
+        else:
+            new_times.append(-99999)       
+    
+    df["merge_time"] = new_times
+    return df
+
+    
+def beta(x,a,b,Tmax,Tmin):
+    width = Tmax - Tmin
+    return pow((x-Tmin)/width,a-1)*pow(1-((x-Tmin)/width),b-1) / (gamma(a)*gamma(b)/gamma(a+b))
+
+def beta_exponential(x,a,b,A,d,Tmax,Tmin,multiply=False):
+    width = Tmax - Tmin
+    if multiply==True: return A*np.exp(-d*(x-Tmin)/width)*pow((x-Tmin)/width,a-1)*pow(1-((x-Tmin)/width),b-1) / (gamma(a)*gamma(b)/gamma(a+b))
+    else: return A*np.exp(-d*(x-Tmin)/width)+pow((x-Tmin)/width,a-1)*pow(1-((x-Tmin)/width),b-1) / (gamma(a)*gamma(b)/gamma(a+b))
+
 
 
 def apply_goodruns(df):
